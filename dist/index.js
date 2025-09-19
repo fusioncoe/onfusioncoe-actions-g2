@@ -31840,13 +31840,23 @@ const github = __nccwpck_require__(3228);
 
 (async () => {
 
-    const formData = new FormData();
-    formData.append("client_id", core.getInput("client_id"));
-    formData.append("client_secret", core.getInput("client_secret"));
-    formData.append("scope", core.getInput("scope"));
-    formData.append("grant_type", "client_credentials");
 
     const tenant_id = core.getInput("tenant_id");
+    const client_secret = core.getInput("client_secret");
+    const client_id = core.getInput("client_id");
+    const scope = core.getInput("scope");            
+
+    const formData = new FormData();
+    formData.append("client_id", client_id);
+    formData.append("client_secret", client_secret);
+    formData.append("scope", core.getInput("scope"));
+    formData.append("grant_type", scope);
+
+    if (client_secret == null || client_secret.length() == 0){
+         throw new Error(
+            `Invalid Client Secret`,
+        );       
+    }
 
     const fetchUrl = `https://login.microsoftonline.com/${tenant_id}/oauth2/v2.0/token`;
 
@@ -31865,7 +31875,7 @@ const github = __nccwpck_require__(3228);
         );
     }    
 
-    const bearer = `bearer ${authResponse.access_token}`;  
+    const bearer = `bearer ${response.access_token}`;  
     
     core.setOutput('authorization_header', bearer);    
 
