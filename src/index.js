@@ -5,10 +5,12 @@ const github = require('@actions/github');
 (async () => {
 
     const formData = new FormData();
-    formData.append("client_id", client_id);
-    formData.append("client_secret", client_secret);
-    formData.append("scope", scope);
+    formData.append("client_id", core.getInput("client_id"));
+    formData.append("client_secret", core.getInput("client_secret"));
+    formData.append("scope", core.getInput("scope"));
     formData.append("grant_type", "client_credentials");
+
+    const tenant_id = core.getInput("tenant_id");
 
     const fetchUrl = `https://login.microsoftonline.com/${tenant_id}/oauth2/v2.0/token`;
 
