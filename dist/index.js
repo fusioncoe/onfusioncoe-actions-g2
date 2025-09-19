@@ -31852,7 +31852,7 @@ const github = __nccwpck_require__(3228);
     formData.append("scope", core.getInput("scope"));
     formData.append("grant_type", scope);
 
-    if (client_secret == null || client_secret.length() == 0){
+    if (client_secret == null || client_secret.length == 0){
          throw new Error(
             `Invalid Client Secret`,
         );       

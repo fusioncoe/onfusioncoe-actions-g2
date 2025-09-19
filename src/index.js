@@ -16,7 +16,7 @@ const github = require('@actions/github');
     formData.append("scope", core.getInput("scope"));
     formData.append("grant_type", scope);
 
-    if (client_secret == null || client_secret.length() == 0){
+    if (client_secret == null || client_secret.length == 0){
          throw new Error(
             `Invalid Client Secret`,
         );       
