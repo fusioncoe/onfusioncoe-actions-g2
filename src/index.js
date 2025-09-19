@@ -10,7 +10,6 @@ const github = require('@actions/github');
     formData.append("scope", scope);
     formData.append("grant_type", "client_credentials");
 
-
     const fetchUrl = `https://login.microsoftonline.com/${tenant_id}/oauth2/v2.0/token`;
 
     const response = await fetch(fetchUrl, {
@@ -35,7 +34,7 @@ const github = require('@actions/github');
     const payload = JSON.stringify(github.context.payload, null, 2);
     core.info(`Event payload: ${payload}`);
 
-}).
+})().
 catch (error => {
    core.setFailed(error.message);
 });
