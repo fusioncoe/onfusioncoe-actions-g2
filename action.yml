@@ -1,13 +1,30 @@
 name: "My JavaScript Action"
 description: "A simple GitHub Action written in JavaScript"
+
 inputs:
- name:
-   description: "Name to greet"
-   required: true
-   default: "World"
+
+      client_id:
+        description: "The application id to authenticate with."
+        required: false
+
+      client_secret:
+        description: "The client secret to authenticate with. Required if authenticating with app-id."
+        required: false
+
+      tenant_id:
+        description: "Tenant id if using app-id & client secret to authenticate."
+        required: false
+
+      scope:
+        description: "scope"
+        required: false
+        default: "https://graph.microsoft.com/.default"
+
 outputs:
- time:
-   description: "The time the greeting occurred"
+
+ authorization_header:
+   description: "Bearer header used to make api calls."
+
 runs:
  using: "node20"
  main: "dist/index.js"
