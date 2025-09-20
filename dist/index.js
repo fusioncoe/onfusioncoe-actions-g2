@@ -56558,7 +56558,6 @@ __nccwpck_require__.r(__webpack_exports__);
 /* harmony export */   "default": () => (/* binding */ executeAction)
 /* harmony export */ });
 const core = __nccwpck_require__(3594);
-//const github = require('@actions/github');
 const msal = __nccwpck_require__(7041);
 
 

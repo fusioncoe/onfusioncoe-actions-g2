@@ -3,27 +3,27 @@ description: "A simple GitHub Action written in JavaScript"
 
 inputs:
 
-      authority:
-        description: "The application id to authenticate with."
-        required: false
-        default: "https://login.microsoftonline.com/""
+  authority:
+    description: "The application id to authenticate with."
+    required: false
+    default: "https://login.microsoftonline.com/""
 
-      client_id:
-        description: "The application id to authenticate with."
-        required: false
+  client_id:
+    description: "The application id to authenticate with."
+    required: true
 
-      client_secret:
-        description: "The client secret to authenticate with. Required if authenticating with app-id."
-        required: false
+  client_secret:
+    description: "The client secret to authenticate with. Required if authenticating with app-id."
+    required: true
 
-      tenant_id:
-        description: "Tenant id if using app-id & client secret to authenticate."
-        required: false
+  tenant_id:
+    description: "Tenant id if using app-id & client secret to authenticate."
+    required: true
 
-      scope:
-        description: "scope"
-        required: false
-        default: "https://graph.microsoft.com/.default"
+  scope:
+    description: "scope"
+    required: false
+    default: "https://graph.microsoft.com/.default"
 
 outputs:
 
