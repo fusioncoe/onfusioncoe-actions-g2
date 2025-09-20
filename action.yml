@@ -3,6 +3,11 @@ description: "A simple GitHub Action written in JavaScript"
 
 inputs:
 
+      authority:
+        description: "The application id to authenticate with."
+        required: false
+        default: "https://login.microsoftonline.com/""
+
       client_id:
         description: "The application id to authenticate with."
         required: false
