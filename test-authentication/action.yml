@@ -1,0 +1,32 @@
+name: "authenticate-sp"
+description: "authenticate-sp"
+
+inputs:
+    bearer_header:
+      description: "Bearer Authentication Header"
+      required: true
+
+    request_url:
+      description: "url to use to access the action"
+      required: true      
+
+runs:
+  using: "composite"
+  steps:
+    - name: authentication test
+      shell: pwsh
+      run: |
+
+        $bearer = "${{ inputs.bearer_header }}"
+        $InvokeUrl = "${{ inputs.request_url }}"
+
+        $headers = @{
+            'Authorization' = $bearer
+        }
+
+        
+        echo $InvokeUrl
+
+        $testResult = Invoke-RestMethod -Method Post -Uri $InvokeUrl -Body $RequestBody
+
+        echo $testResult

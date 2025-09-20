@@ -56595,10 +56595,9 @@ async function executeAction (authority, client_id, client_secret, tenant_id, sc
 
     const cca = new msal.ConfidentialClientApplication(msalConfig);
     
-    const token = await cca.acquireTokenByClientCredential(tokenRequest)
-    
-    console.warn(token);
-    const bearer = `bearer ${token}`;  
+    const acquireTokenResult = await cca.acquireTokenByClientCredential(tokenRequest)
+
+    const bearer = `bearer ${acquireTokenResult.accessToken}`;  
 
     core.setOutput('authorization_header', bearer);   
 
