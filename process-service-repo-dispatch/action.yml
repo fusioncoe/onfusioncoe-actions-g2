@@ -14,11 +14,13 @@ on:
 
       cloud:
         description: 'Cloud instance to authenticate with. Default: Public. See "pac auth create help" for valid cloud instance names'
-        default: "Public"
+        required: false
+        default: 'Public'
 
       authority:
         description: 'Microsoft authentication authority for the target cloud.'
-        default: "https://login.microsoftonline.com/"
+        required: false
+        default: 'https://login.microsoftonline.com/'
 
       # secrets:
 
