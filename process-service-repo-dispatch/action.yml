@@ -4,23 +4,27 @@ description: "Process OnFusionCoe service repo dispatch operation"
 on:
   workflow_call:
     inputs:
-      cicd_app_id:
+      client_id:
         description: "The application id to authenticate with."
-        required: false
+        required: true
 
-      cicd_tenant_id:
+      tenant_id:
         description: "Tenant id if using app-id & client secret to authenticate."
-        required: false
+        required: true
 
-      cicd_cloud:
+      cloud:
         description: 'Cloud instance to authenticate with. Default: Public. See "pac auth create help" for valid cloud instance names'
-        required: false
+        default: "Public"
+
+      authority:
+        description: 'Microsoft authentication authority for the target cloud.'
+        default: "https://login.microsoftonline.com/"
 
       # secrets:
 
-      cicd_sp_client_secret:
+      client_secret:
         description: "The client secret to authenticate with. Required if authenticating with app-id."
-        required: false
+        required: true
 
 runs:
   using: "composite"
@@ -31,10 +35,12 @@ runs:
         echo "Handling dispatch operation ${{github.event.action}}"
         # get-content ${{ github.event_path }} 
 
-        $TenantId = "${{ inputs.cicd_tenant_id }}"
-        $AppClientId="${{ inputs.cicd_app_id }}"        
-        $ClientSecret ="${{ inputs.cicd_sp_client_secret }}"
-        $InvokeUrl = "https://login.microsoftonline.com/$TenantId/oauth2/v2.0/token"
+        $TenantId = "${{ inputs.tenant_id }}"
+        $AppClientId="${{ inputs.client_id }}"        
+        $ClientSecret ="${{ inputs.client_secret }}"
+        $Authority ="${{ inputs.authority }}"
+
+        $InvokeUrl = "$Authority$TenantId/oauth2/v2.0/token"
           
         $RequestBody = @{client_id=$AppClientId;client_secret=$ClientSecret;grant_type="client_credentials";scope="https://graph.microsoft.com/.default";}
 
@@ -47,9 +53,6 @@ runs:
         $AuthorizationHeader = "bearer $AccessToken"
 
         echo $AuthorizationHeader
-
-        # echo "SPN_BEARER=$AuthorizationHeader" >> $GITHUB_ENV
-        # echo "SPN_BEARER=$AuthorizationHeader" >> $GITHUB_OUTPUT
 
     - name: Checking Credentials
       shell: pwsh
