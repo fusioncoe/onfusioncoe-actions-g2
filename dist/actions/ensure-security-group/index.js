@@ -41614,6 +41614,7 @@ var { startGroup } = require_core();
 var { endGroup } = require_core();
 var { setFailed } = require_core();
 var { info } = require_core();
+var core = require_core();
 var FsnxApiClient = require_FsnxApiClient();
 (async () => {
   startGroup("ensure-security-group");

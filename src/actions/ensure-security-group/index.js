@@ -5,7 +5,7 @@ const {startGroup} = require('@actions/core');
 const {endGroup} = require('@actions/core');
 const {setFailed} = require('@actions/core');
 const {info} = require('@actions/core');
-//const core = require('@actions/core');
+const core = require('@actions/core');
 
 const FsnxApiClient = require('../../lib/FsnxApiClient.js');
 
