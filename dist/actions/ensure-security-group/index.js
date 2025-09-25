@@ -41640,7 +41640,7 @@ async function executeAction(authority, client_id, client_secret, tenant_id, clo
   const getSecGrpAction = actions[1];
   const getResponse = await FsnxApiClient.ExecuteHttpAction(getSecGrpAction, authority, client_id, client_secret, tenant_id);
   if (getResponse.ok) {
-    core.setOutput(object_id, getResponse.body.id);
+    core.setOutput("object_id", getResponse.body.id);
   } else {
   }
 }
