@@ -20,7 +20,7 @@ const core = require('@actions/core');
     const cloud = getInput("cloud");  
     const eventPath = getInput("cloud");     
     
-    await executeAction(authority, client_id,client_secret,tenant_id, cloud);
+    await executeAction(authority, client_id,client_secret,tenant_id, cloud, eventPath);
 
     endGroup();    
 
