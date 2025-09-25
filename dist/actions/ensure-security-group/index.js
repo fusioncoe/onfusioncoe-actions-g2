@@ -19813,6 +19813,7 @@ var { startGroup } = require_core();
 var { endGroup } = require_core();
 var { setFailed } = require_core();
 var { info } = require_core();
+var core = require_core();
 (async () => {
   startGroup("ensure-security-group");
   const authority = getInput("authority");
@@ -19828,6 +19829,16 @@ var { info } = require_core();
 });
 async function executeAction(authority, client_id, client_secret, tenant_id, cloud) {
   info("currently running ensure-security-group");
+  const actions = eventInput.client_payload.dispatch_payload.actions;
+  const upsertSecGrpAction = actions[0];
+  info(`Adding or updating security group "${upsertSecGrpAction.payload.Content.Body.displayName}"`);
+  const upsertresponse = await FsnxApiClient.ExecuteHttpAction(upsertSecGrpAction, authority, client_id, client_secret, tenant_id);
+  const getSecGrpAction = actions[1];
+  const getResponse = await FsnxApiClient.ExecuteHttpAction(getSecGrpAction, authority, client_id, client_secret, tenant_id);
+  if (getResponse.ok) {
+    core.setOutput(object_id, getResponse.body.id);
+  } else {
+  }
 }
 /*! Bundled license information:
 

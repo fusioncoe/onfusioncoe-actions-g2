@@ -5,7 +5,7 @@ const {startGroup} = require('@actions/core');
 const {endGroup} = require('@actions/core');
 const {setFailed} = require('@actions/core');
 const {info} = require('@actions/core');
-//const core = require('@actions/core');
+const core = require('@actions/core');
 //const msal = require('@azure/msal-node');
 
 
@@ -32,4 +32,26 @@ catch (error => {
 export default async function executeAction (authority, client_id, client_secret, tenant_id, cloud)
 {
     info("currently running ensure-security-group")
+
+    const actions = eventInput.client_payload.dispatch_payload.actions;
+
+    // process action 1, upsert
+
+    const upsertSecGrpAction = actions[0];
+
+    info(`Adding or updating security group "${upsertSecGrpAction.payload.Content.Body.displayName}"`)
+    const upsertresponse = await FsnxApiClient.ExecuteHttpAction(upsertSecGrpAction, authority,client_id,client_secret,tenant_id)
+
+    const getSecGrpAction = actions[1];
+    
+    const getResponse = await FsnxApiClient.ExecuteHttpAction(getSecGrpAction, authority,client_id,client_secret,tenant_id)
+
+    if (getResponse.ok) {
+    core.setOutput(object_id,getResponse.body.id);
+    }
+    else
+    {
+        // throw some errors here.
+    }
+
 }

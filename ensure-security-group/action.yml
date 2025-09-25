@@ -26,6 +26,10 @@ inputs:
     description: "The client secret to authenticate with. Required if authenticating with app-id."
     required: true
 
+outputs:
+  object_id:
+   description: "The object id of the security group."  
+
 runs:
  using: "node20"
  main: "../dist/actions/ensure-security-group/index.js"   
