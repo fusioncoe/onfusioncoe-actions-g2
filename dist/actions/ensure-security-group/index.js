@@ -19821,7 +19821,7 @@ var core = require_core();
   const client_secret = getInput("client_secret");
   const client_id = getInput("client_id");
   const cloud = getInput("cloud");
-  const eventPath = getInput("cloud");
+  const eventPath = getInput("event_path");
   await executeAction(authority, client_id, client_secret, tenant_id, cloud, eventPath);
   endGroup();
 })().catch((error) => {
