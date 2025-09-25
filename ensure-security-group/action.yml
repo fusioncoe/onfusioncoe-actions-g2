@@ -28,4 +28,4 @@ inputs:
 
 runs:
  using: "node20"
- main: "dist/ensure-security-group/index.js"   
+ main: "dist\actions\ensure-security-group\index.js"   
