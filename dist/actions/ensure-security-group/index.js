@@ -19821,14 +19821,16 @@ var core = require_core();
   const client_secret = getInput("client_secret");
   const client_id = getInput("client_id");
   const cloud = getInput("cloud");
+  const eventPath = getInput("cloud");
   await executeAction(authority, client_id, client_secret, tenant_id, cloud);
   endGroup();
 })().catch((error) => {
   endGroup();
   setFailed(error.message);
 });
-async function executeAction(authority, client_id, client_secret, tenant_id, cloud) {
+async function executeAction(authority, client_id, client_secret, tenant_id, cloud, eventPath) {
   info("currently running ensure-security-group");
+  const eventInput = require(eventPath);
   const actions = eventInput.client_payload.dispatch_payload.actions;
   const upsertSecGrpAction = actions[0];
   info(`Adding or updating security group "${upsertSecGrpAction.payload.Content.Body.displayName}"`);

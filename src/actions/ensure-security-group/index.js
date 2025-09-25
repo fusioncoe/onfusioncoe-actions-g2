@@ -18,6 +18,7 @@ const core = require('@actions/core');
     const client_secret = getInput("client_secret");
     const client_id = getInput("client_id");
     const cloud = getInput("cloud");  
+    const eventPath = getInput("cloud");     
     
     await executeAction(authority, client_id,client_secret,tenant_id, cloud);
 
@@ -29,9 +30,11 @@ catch (error => {
     setFailed(error.message);
 });
 
-export default async function executeAction (authority, client_id, client_secret, tenant_id, cloud)
+export default async function executeAction (authority, client_id, client_secret, tenant_id, cloud, eventPath)
 {
     info("currently running ensure-security-group")
+
+    const eventInput = require(eventPath);
 
     const actions = eventInput.client_payload.dispatch_payload.actions;
 
