@@ -17588,12 +17588,12 @@ var require_lib = __commonJS({
             throw new Error("Client has already been disposed.");
           }
           const parsedUrl = new URL(requestUrl);
-          let info2 = this._prepareRequest(verb, parsedUrl, headers);
+          let info = this._prepareRequest(verb, parsedUrl, headers);
           const maxTries = this._allowRetries && RetryableHttpVerbs.includes(verb) ? this._maxRetries + 1 : 1;
           let numTries = 0;
           let response2;
           do {
-            response2 = yield this.requestRaw(info2, data);
+            response2 = yield this.requestRaw(info, data);
             if (response2 && response2.message && response2.message.statusCode === HttpCodes.Unauthorized) {
               let authenticationHandler;
               for (const handler of this.handlers) {
@@ -17603,7 +17603,7 @@ var require_lib = __commonJS({
                 }
               }
               if (authenticationHandler) {
-                return authenticationHandler.handleAuthentication(this, info2, data);
+                return authenticationHandler.handleAuthentication(this, info, data);
               } else {
                 return response2;
               }
@@ -17626,8 +17626,8 @@ var require_lib = __commonJS({
                   }
                 }
               }
-              info2 = this._prepareRequest(verb, parsedRedirectUrl, headers);
-              response2 = yield this.requestRaw(info2, data);
+              info = this._prepareRequest(verb, parsedRedirectUrl, headers);
+              response2 = yield this.requestRaw(info, data);
               redirectsRemaining--;
             }
             if (!response2.message.statusCode || !HttpResponseRetryCodes.includes(response2.message.statusCode)) {
@@ -17656,7 +17656,7 @@ var require_lib = __commonJS({
        * @param info
        * @param data
        */
-      requestRaw(info2, data) {
+      requestRaw(info, data) {
         return __awaiter(this, void 0, void 0, function* () {
           return new Promise((resolve, reject) => {
             function callbackForResult(err, res) {
@@ -17668,7 +17668,7 @@ var require_lib = __commonJS({
                 resolve(res);
               }
             }
-            this.requestRawWithCallback(info2, data, callbackForResult);
+            this.requestRawWithCallback(info, data, callbackForResult);
           });
         });
       }
@@ -17678,12 +17678,12 @@ var require_lib = __commonJS({
        * @param data
        * @param onResult
        */
-      requestRawWithCallback(info2, data, onResult) {
+      requestRawWithCallback(info, data, onResult) {
         if (typeof data === "string") {
-          if (!info2.options.headers) {
-            info2.options.headers = {};
+          if (!info.options.headers) {
+            info.options.headers = {};
           }
-          info2.options.headers["Content-Length"] = Buffer.byteLength(data, "utf8");
+          info.options.headers["Content-Length"] = Buffer.byteLength(data, "utf8");
         }
         let callbackCalled = false;
         function handleResult(err, res) {
@@ -17692,7 +17692,7 @@ var require_lib = __commonJS({
             onResult(err, res);
           }
         }
-        const req = info2.httpModule.request(info2.options, (msg) => {
+        const req = info.httpModule.request(info.options, (msg) => {
           const res = new HttpClientResponse(msg);
           handleResult(void 0, res);
         });
@@ -17704,7 +17704,7 @@ var require_lib = __commonJS({
           if (socket) {
             socket.end();
           }
-          handleResult(new Error(`Request timeout: ${info2.options.path}`));
+          handleResult(new Error(`Request timeout: ${info.options.path}`));
         });
         req.on("error", function(err) {
           handleResult(err);
@@ -17740,27 +17740,27 @@ var require_lib = __commonJS({
         return this._getProxyAgentDispatcher(parsedUrl, proxyUrl);
       }
       _prepareRequest(method, requestUrl, headers) {
-        const info2 = {};
-        info2.parsedUrl = requestUrl;
-        const usingSsl = info2.parsedUrl.protocol === "https:";
-        info2.httpModule = usingSsl ? https : http;
+        const info = {};
+        info.parsedUrl = requestUrl;
+        const usingSsl = info.parsedUrl.protocol === "https:";
+        info.httpModule = usingSsl ? https : http;
         const defaultPort = usingSsl ? 443 : 80;
-        info2.options = {};
-        info2.options.host = info2.parsedUrl.hostname;
-        info2.options.port = info2.parsedUrl.port ? parseInt(info2.parsedUrl.port) : defaultPort;
-        info2.options.path = (info2.parsedUrl.pathname || "") + (info2.parsedUrl.search || "");
-        info2.options.method = method;
-        info2.options.headers = this._mergeHeaders(headers);
+        info.options = {};
+        info.options.host = info.parsedUrl.hostname;
+        info.options.port = info.parsedUrl.port ? parseInt(info.parsedUrl.port) : defaultPort;
+        info.options.path = (info.parsedUrl.pathname || "") + (info.parsedUrl.search || "");
+        info.options.method = method;
+        info.options.headers = this._mergeHeaders(headers);
         if (this.userAgent != null) {
-          info2.options.headers["user-agent"] = this.userAgent;
+          info.options.headers["user-agent"] = this.userAgent;
         }
-        info2.options.agent = this._getAgent(info2.parsedUrl);
+        info.options.agent = this._getAgent(info.parsedUrl);
         if (this.handlers) {
           for (const handler of this.handlers) {
-            handler.prepareRequest(info2.options);
+            handler.prepareRequest(info.options);
           }
         }
-        return info2;
+        return info;
       }
       _mergeHeaders(headers) {
         if (this.requestOptions && this.requestOptions.headers) {
@@ -19681,7 +19681,7 @@ var require_core = __commonJS({
       process.env["PATH"] = `${inputPath}${path.delimiter}${process.env["PATH"]}`;
     }
     exports2.addPath = addPath;
-    function getInput2(name, options) {
+    function getInput(name, options) {
       const val = process.env[`INPUT_${name.replace(/ /g, "_").toUpperCase()}`] || "";
       if (options && options.required && !val) {
         throw new Error(`Input required and not supplied: ${name}`);
@@ -19691,9 +19691,9 @@ var require_core = __commonJS({
       }
       return val.trim();
     }
-    exports2.getInput = getInput2;
+    exports2.getInput = getInput;
     function getMultilineInput(name, options) {
-      const inputs = getInput2(name, options).split("\n").filter((x) => x !== "");
+      const inputs = getInput(name, options).split("\n").filter((x) => x !== "");
       if (options && options.trimWhitespace === false) {
         return inputs;
       }
@@ -19703,7 +19703,7 @@ var require_core = __commonJS({
     function getBooleanInput(name, options) {
       const trueValue = ["true", "True", "TRUE"];
       const falseValue = ["false", "False", "FALSE"];
-      const val = getInput2(name, options);
+      const val = getInput(name, options);
       if (trueValue.includes(val))
         return true;
       if (falseValue.includes(val))
@@ -19725,11 +19725,11 @@ Support boolean input list: \`true | True | TRUE | false | False | FALSE\``);
       (0, command_1.issue)("echo", enabled ? "on" : "off");
     }
     exports2.setCommandEcho = setCommandEcho;
-    function setFailed2(message) {
+    function setFailed(message) {
       process.exitCode = ExitCode.Failure;
       error(message);
     }
-    exports2.setFailed = setFailed2;
+    exports2.setFailed = setFailed;
     function isDebug() {
       return process.env["RUNNER_DEBUG"] === "1";
     }
@@ -19750,26 +19750,26 @@ Support boolean input list: \`true | True | TRUE | false | False | FALSE\``);
       (0, command_1.issueCommand)("notice", (0, utils_1.toCommandProperties)(properties), message instanceof Error ? message.toString() : message);
     }
     exports2.notice = notice;
-    function info2(message) {
+    function info(message) {
       process.stdout.write(message + os.EOL);
     }
-    exports2.info = info2;
-    function startGroup2(name) {
+    exports2.info = info;
+    function startGroup(name) {
       (0, command_1.issue)("group", name);
     }
-    exports2.startGroup = startGroup2;
-    function endGroup2() {
+    exports2.startGroup = startGroup;
+    function endGroup() {
       (0, command_1.issue)("endgroup");
     }
-    exports2.endGroup = endGroup2;
+    exports2.endGroup = endGroup;
     function group(name, fn) {
       return __awaiter(this, void 0, void 0, function* () {
-        startGroup2(name);
+        startGroup(name);
         let result;
         try {
           result = yield fn();
         } finally {
-          endGroup2();
+          endGroup();
         }
         return result;
       });
@@ -41544,6 +41544,7 @@ Headers: ${JSON.stringify(headers)}`
 var require_FsnxApiClient = __commonJS({
   "src/lib/FsnxApiClient.js"(exports2, module2) {
     var msal = require_msal_node();
+    var crypto4 = require("crypto");
     var ScopeAuthMap = /* @__PURE__ */ new Map();
     async function GetAuthHeader(authority, client_id, client_secret, tenant_id, scope) {
       const scopeKey = scope.join(" ");
@@ -41596,54 +41597,106 @@ var require_FsnxApiClient = __commonJS({
         ...responseBody
       };
     }
+    async function GenerateSHA(input) {
+      const encoder = new TextEncoder();
+      const data = encoder.encode(input);
+      const hashBuffer = await crypto4.subtle.digest("SHA-256", data);
+      const hashArray = Array.from(new Uint8Array(hashBuffer));
+      const hashHex = hashArray.map((byte) => byte.toString(16).padStart(2, "0")).join("");
+      return hashHex;
+    }
+    async function EncryptData(input, pemKey) {
+      return crypto4.privateEncrypt(
+        {
+          key: Buffer.from(pemKey),
+          padding: crypto4.constants.RSA_PKCS1_PADDING
+          //oaepHash: "sha256",
+        },
+        // We convert the data string to a buffer using `Buffer.from`
+        Buffer.from(input)
+      ).toString("base64");
+    }
+    async function SubmitOutput(output, client_payload, private_key) {
+      const outUrl = client_payload.dispatch_output_url;
+      const outputBodyObject = {
+        dispatch_job_id: client_payload.dispatch_job_id,
+        fusionex_accountorganizationid: client_payload.fusionex_accountorganizationid,
+        output: { ...output }
+      };
+      const outputBodyJson = { body: JSON.stringify(outputBodyObject) };
+      const outputSha = await GenerateSHA(outputBodyJson.body);
+      const rsaSha = await EncryptData(outputSha, private_key);
+      const outputReqHeaders = {
+        "Content-Type": "application/json",
+        "fusionex-output-sha": outputSha,
+        "fusionex-auth-rsa-sha": rsaSha,
+        "fusionex-accountorganizationid": client_payload.fusionex_accountorganizationid
+      };
+      outputResponse = await fetch(
+        outUrl,
+        {
+          method: "POST",
+          headers: { ...outputReqHeaders },
+          ...outputBodyJson
+        }
+      );
+    }
     module2.exports = {
       GetAuthHeader,
-      ExecuteHttpAction
+      ExecuteHttpAction,
+      GenerateSHA,
+      EncryptData,
+      SubmitOutput
     };
   }
 });
 
 // src/actions/ensure-security-group/index.js
-var index_exports = {};
-__export(index_exports, {
-  default: () => executeAction
-});
-module.exports = __toCommonJS(index_exports);
-var { getInput } = require_core();
-var { startGroup } = require_core();
-var { endGroup } = require_core();
-var { setFailed } = require_core();
-var { info } = require_core();
 var core = require_core();
 var FsnxApiClient = require_FsnxApiClient();
 (async () => {
-  startGroup("ensure-security-group");
-  const authority = getInput("authority");
-  const tenant_id = getInput("tenant_id");
-  const client_secret = getInput("client_secret");
-  const client_id = getInput("client_id");
-  const cloud = getInput("cloud");
-  const eventPath = getInput("event_path");
-  await executeAction(authority, client_id, client_secret, tenant_id, cloud, eventPath);
-  endGroup();
+  core.startGroup("ensure-security-group");
+  const args = {
+    authority: core.getInput("authority"),
+    tenant_id: core.getInput("tenant_id"),
+    client_secret: core.getInput("client_secret"),
+    client_id: core.getInput("client_id"),
+    cloud: core.getInput("cloud"),
+    output_private_key: core.getInput("output_private_key"),
+    event_path: core.getInput("event_path")
+  };
+  await executeAction(args);
+  core.endGroup();
 })().catch((error) => {
-  endGroup();
-  setFailed(error.message);
+  core.endGroup();
+  core.setFailed(error.message);
 });
-async function executeAction(authority, client_id, client_secret, tenant_id, cloud, eventPath) {
-  info("currently running ensure-security-group");
-  const eventInput = require(eventPath);
+async function executeAction(args) {
+  core.info("currently running ensure-security-group test");
+  const eventInput = require(args.event_path);
   const actions = eventInput.client_payload.dispatch_payload.actions;
   const upsertSecGrpAction = actions[0];
-  info(`Adding or updating security group "${upsertSecGrpAction.payload.Content.Body.displayName}"`);
-  const upsertresponse = await FsnxApiClient.ExecuteHttpAction(upsertSecGrpAction, authority, client_id, client_secret, tenant_id);
-  const getSecGrpAction = actions[1];
-  const getResponse = await FsnxApiClient.ExecuteHttpAction(getSecGrpAction, authority, client_id, client_secret, tenant_id);
-  if (getResponse.ok) {
-    core.setOutput("object_id", getResponse.body.id);
+  core.info(`Adding or updating security group "${upsertSecGrpAction.payload.Content.Body.displayName}"`);
+  const upsertresponse = await FsnxApiClient.ExecuteHttpAction(upsertSecGrpAction, args.authority, args.client_id, args.client_secret, args.tenant_id);
+  if (upsertresponse.ok) {
+    let secObj = upsertresponse.body;
+    if (secObj == null) {
+      const getSecGrpAction = actions[1];
+      const getResponse = await FsnxApiClient.ExecuteHttpAction(getSecGrpAction, args.authority, args.client_id, args.client_secret, args.tenant_id);
+      if (getResponse.ok) {
+        secObj = getResponse.body;
+      } else {
+      }
+    }
+    core.info(JSON.stringify(secObj));
+    core.setOutput("object_id", secObj?.id);
+    FsnxApiClient.SubmitOutput(secObj, eventInput.client_payload, args.output_private_key);
   } else {
   }
 }
+module.exports = {
+  executeAction
+};
 /*! Bundled license information:
 
 undici/lib/fetch/body.js:

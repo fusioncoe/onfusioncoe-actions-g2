@@ -30,6 +30,10 @@ inputs:
     description: "The path to the file on the runner that contains the full event webhook payload."
     required: true    
 
+  output_private_key:
+    description: "Private key used to authenticate service management output requests"
+    required: true        
+
 outputs:
   object_id:
    description: "The object id of the security group."  

@@ -1,7 +1,9 @@
-// root index.js
+// FsnxApiClient.js
 
 //const core = require('@actions/core');
 const msal = require('@azure/msal-node');
+const crypto = require('crypto');
+//const { buffer } = require('stream/consumers');
 
 const ScopeAuthMap = new Map();
 
@@ -114,8 +116,71 @@ async function ExecuteHttpAction (action, authority, client_id, client_secret, t
 
 }
 
+async function GenerateSHA(input) {
+  const encoder = new TextEncoder();
+  const data = encoder.encode(input);
+  const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+  const hashArray = Array.from(new Uint8Array(hashBuffer));
+  const hashHex = hashArray.map(byte => byte.toString(16).padStart(2, '0')).join('');
+  return hashHex;
+}
+
+async function EncryptData(input, pemKey) {
+    return crypto.privateEncrypt(
+    {
+        key: Buffer.from(pemKey),
+        padding: crypto.constants.RSA_PKCS1_PADDING
+        //oaepHash: "sha256",
+    },
+    // We convert the data string to a buffer using `Buffer.from`
+    Buffer.from(input)
+    ).toString("base64");
+}
+
+async function SubmitOutput (output, client_payload, private_key)
+{
+        const outUrl = client_payload.dispatch_output_url;
+
+        const outputBodyObject =
+        {
+            dispatch_job_id: client_payload.dispatch_job_id,
+            fusionex_accountorganizationid: client_payload.fusionex_accountorganizationid,
+            output: {...output}
+        }
+
+        const outputBodyJson ={ body: JSON.stringify(outputBodyObject)}
+        const outputSha = await GenerateSHA(outputBodyJson.body);
+
+        //core.info(`encrypting data ${outputSha}`);
+
+        const rsaSha = await EncryptData(outputSha, private_key );
+
+        const outputReqHeaders = {"Content-Type": "application/json",
+                  "fusionex-output-sha": outputSha,
+                  "fusionex-auth-rsa-sha": rsaSha,
+                  "fusionex-accountorganizationid": client_payload.fusionex_accountorganizationid }
+
+        //core.info (JSON.stringify(outputReqHeaders))
+
+        //core.info(`processing fetch: ${outUrl}`);        
+
+        outputResponse = await fetch(outUrl, 
+        {
+        method: "POST",
+        headers: { ...outputReqHeaders },
+        ...outputBodyJson
+        });
+
+        //core.info("processing fetch");          
+        //core.info(JSON.stringify(outputResponse))
+
+}
+
 module.exports = 
 {
   GetAuthHeader,
-  ExecuteHttpAction 
+  ExecuteHttpAction,
+  GenerateSHA,
+  EncryptData,
+  SubmitOutput
 }
