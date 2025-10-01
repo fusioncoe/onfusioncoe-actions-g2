@@ -84,6 +84,8 @@ async function executeAction (args)
         if (secObj == null )
         {
 
+            core.info("Security group already exists.  Retrieving Object Id");
+
             const getSecGrpAction = actions["group-get-by-uniquename-check"];
     
             const getResponse = await FsnxApiClient.ExecuteHttpAction(getSecGrpAction, args.authority,args.client_id,args.client_secret,args.tenant_id);
