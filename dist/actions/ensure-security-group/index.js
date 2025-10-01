@@ -41674,14 +41674,16 @@ var FsnxApiClient = require_FsnxApiClient();
 async function executeAction(args) {
   core.info("currently running ensure-security-group test");
   const eventInput = require(args.event_path);
+  core.info(JSON.stringify(eventInput));
   const actions = eventInput.client_payload.dispatch_payload.actions;
-  const upsertSecGrpAction = actions[0];
+  const upsertSecGrpAction = actions["group-patch-upsert"];
   core.info(`Adding or updating security group "${upsertSecGrpAction.payload.Content.Body.displayName}"`);
   const upsertresponse = await FsnxApiClient.ExecuteHttpAction(upsertSecGrpAction, args.authority, args.client_id, args.client_secret, args.tenant_id);
   if (upsertresponse.ok) {
     let secObj = upsertresponse.body;
     if (secObj == null) {
-      const getSecGrpAction = actions[1];
+      core.info("Security group already exists.  Retrieving Object Id");
+      const getSecGrpAction = actions["group-get-by-uniquename-check"];
       const getResponse = await FsnxApiClient.ExecuteHttpAction(getSecGrpAction, args.authority, args.client_id, args.client_secret, args.tenant_id);
       if (getResponse.ok) {
         secObj = getResponse.body;
