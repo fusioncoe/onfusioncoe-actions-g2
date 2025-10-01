@@ -60,6 +60,8 @@ async function executeAction (args)
 
     const eventInput = require(args.event_path);
 
+    core.info(JSON.stringify(eventInput));
+
     // core.info("Event input has been collected");    
 
     const actions = eventInput.client_payload.dispatch_payload.actions;
