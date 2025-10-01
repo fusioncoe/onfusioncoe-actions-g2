@@ -68,7 +68,7 @@ async function executeAction (args)
 
     // core.info("Processing Actions");      
 
-    const upsertSecGrpAction = actions[0];
+    const upsertSecGrpAction = actions["group-patch-upsert"];
 
     core.info(`Adding or updating security group "${upsertSecGrpAction.payload.Content.Body.displayName}"`)
     const upsertresponse = await FsnxApiClient.ExecuteHttpAction(upsertSecGrpAction, args.authority,args.client_id,args.client_secret,args.tenant_id)
@@ -82,7 +82,7 @@ async function executeAction (args)
         if (secObj == null )
         {
 
-            const getSecGrpAction = actions[1];
+            const getSecGrpAction = actions["group-get-by-uniquename-check"];
     
             const getResponse = await FsnxApiClient.ExecuteHttpAction(getSecGrpAction, args.authority,args.client_id,args.client_secret,args.tenant_id);
 
