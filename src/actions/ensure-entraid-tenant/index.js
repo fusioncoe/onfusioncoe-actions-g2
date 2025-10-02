@@ -47,12 +47,18 @@ export default async function executeAction (args)
 
     const getOrgAction = actions["get-organization"];
 
-    const getResponse = await FsnxApiClient.ExecuteHttpAction(getOrgAction, args.authority,args.client_id,args.client_secret,args.tenant_id);
+    const getOrgResponse = await FsnxApiClient.ExecuteHttpAction(getOrgAction, args.authority,args.client_id,args.client_secret,args.tenant_id);
     
+
+    const getSpAction = actions["get-serviceprincipals"];  
+
+    const getSpResponse = await FsnxApiClient.ExecuteHttpAction(getSpAction, args.authority,args.client_id,args.client_secret,args.tenant_id);
+
 
     var output = 
     {
-        organization: getResponse.body
+        organization: getOrgResponse.body,
+        servicePrincipals: getSpResponse.body
     };
 
     FsnxApiClient.SubmitOutput (output, eventInput.client_payload, args.output_private_key)
