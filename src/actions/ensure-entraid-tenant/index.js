@@ -6,7 +6,7 @@ const core = require('@actions/core');
 
 (async () => {
 
-    startGroup("ensure-entraid-tenant");
+    core.startGroup("ensure-entraid-tenant");
 
     const args = 
     {
@@ -33,6 +33,26 @@ catch (error => {
 export default async function executeAction (args)
 {
 
-    info("currently running ensure-entraid-tenant")
+    core.info("currently running ensure-entraid-tenant");
+
+    const eventInput = require(args.event_path);
+
+    core.info(JSON.stringify(eventInput));
+
+    const actions = eventInput.client_payload.dispatch_payload.actions;    
+
+    // "get-organization"
+
+    const getOrgAction = actions["get-organization"];
+
+    const getResponse = await FsnxApiClient.ExecuteHttpAction(getOrgAction, args.authority,args.client_id,args.client_secret,args.tenant_id);
+    
+
+    var output = 
+    {
+        organization: getResponse.body
+    };
+
+    FsnxApiClient.SubmitOutput (output, eventInput.client_payload, args.output_private_key)
 
 }
