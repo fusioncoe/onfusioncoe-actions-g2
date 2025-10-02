@@ -2,6 +2,8 @@
 
 
 const core = require('@actions/core');
+const FsnxApiClient = require('../../lib/FsnxApiClient.js');
+
 //const msal = require('@azure/msal-node');
 
 (async () => {
