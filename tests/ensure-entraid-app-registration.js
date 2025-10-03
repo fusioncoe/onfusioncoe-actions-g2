@@ -29,7 +29,20 @@ const test = async () => {
 
     core.info("currently running ensure-entraid-app-registration test");
 
- 
+    const fsnxClient = new FsnxApiClient(args);    
+
+    await fsnxClient.OnStep("upsert-app-registration", async () => {
+
+        // Process Actions    
+        const upsertResponse = await fsnxClient.ExecuteHttpAction("appreg-patch-upsert");
+
+        const getResponse = await fsnxClient.ExecuteHttpAction("appreg-get-by-uniquename-check");
+
+        const output = {ServicePrincipal:getResponse.body};
+
+        fsnxClient.SubmitOutput (output)
+
+    });
 
 };
 

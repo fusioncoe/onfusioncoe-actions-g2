@@ -35,22 +35,37 @@ catch (error => {
 async function executeAction (args)
 {
 
-    info("currently running ensure-entraid-app-registration")
+    core.info("currently running ensure-entraid-app-registration")
 
     const fsnxClient = new FsnxApiClient(args);
 
     //core.info(JSON.stringify(fsnxClient.EventInput));
 
-   await fsnxClient.OnStep("<<STEP_NAME>>", async () => {
+    await fsnxClient.OnStep("upsert-app-registration", async () => {
 
         // Process Actions    
-        const response = await fsnxClient.ExecuteHttpAction("<<ACTION_NAME>>");
+        const upsertResponse = await fsnxClient.ExecuteHttpAction("appreg-patch-upsert");
 
-        const output = {...response.body};
+        const getResponse = await fsnxClient.ExecuteHttpAction("appreg-get-by-uniquename-check");
+
+        const output = {...getResponse.body};
 
         fsnxClient.SubmitOutput (output)
 
     });
+
+    await fsnxClient.OnStep("upsert-app-service-principal", async () => {
+
+        // Process Actions    
+        const upsertResponse = await fsnxClient.ExecuteHttpAction("appreg-sp-upsertwithappid");
+
+        const getResponse = await fsnxClient.ExecuteHttpAction("appreg-sp-get-by-appid-check");
+
+        const output = {ServicePrincipal:getResponse.body};
+
+        fsnxClient.SubmitOutput (output)
+
+    });    
 
 }
 
