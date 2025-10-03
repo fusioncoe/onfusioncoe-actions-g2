@@ -511,13 +511,13 @@ var require_tunnel = __commonJS({
     var debug;
     if (process.env.NODE_DEBUG && /\btunnel\b/.test(process.env.NODE_DEBUG)) {
       debug = function() {
-        var args2 = Array.prototype.slice.call(arguments);
-        if (typeof args2[0] === "string") {
-          args2[0] = "TUNNEL: " + args2[0];
+        var args = Array.prototype.slice.call(arguments);
+        if (typeof args[0] === "string") {
+          args[0] = "TUNNEL: " + args[0];
         } else {
-          args2.unshift("TUNNEL:");
+          args.unshift("TUNNEL:");
         }
-        console.error.apply(console, args2);
+        console.error.apply(console, args);
       };
     } else {
       debug = function() {
@@ -4973,21 +4973,21 @@ var require_file = __commonJS({
           lastModified: d
         };
       }
-      stream(...args2) {
+      stream(...args) {
         webidl.brandCheck(this, _FileLike);
-        return this[kState].blobLike.stream(...args2);
+        return this[kState].blobLike.stream(...args);
       }
-      arrayBuffer(...args2) {
+      arrayBuffer(...args) {
         webidl.brandCheck(this, _FileLike);
-        return this[kState].blobLike.arrayBuffer(...args2);
+        return this[kState].blobLike.arrayBuffer(...args);
       }
-      slice(...args2) {
+      slice(...args) {
         webidl.brandCheck(this, _FileLike);
-        return this[kState].blobLike.slice(...args2);
+        return this[kState].blobLike.slice(...args);
       }
-      text(...args2) {
+      text(...args) {
         webidl.brandCheck(this, _FileLike);
-        return this[kState].blobLike.text(...args2);
+        return this[kState].blobLike.text(...args);
       }
       get size() {
         webidl.brandCheck(this, _FileLike);
@@ -8975,8 +8975,8 @@ var require_balanced_pool = __commonJS({
           pool[kWeight] = Math.max(1, pool[kWeight] - this[kErrorPenalty]);
           this._updateBalancedPoolStats();
         });
-        pool.on("disconnect", (...args2) => {
-          const err = args2[2];
+        pool.on("disconnect", (...args) => {
+          const err = args[2];
           if (err && err.code === "UND_ERR_SOCKET") {
             pool[kWeight] = Math.max(1, pool[kWeight] - this[kErrorPenalty]);
             this._updateBalancedPoolStats();
@@ -9250,32 +9250,32 @@ var require_readable = __commonJS({
         }
         return super.destroy(err);
       }
-      emit(ev, ...args2) {
+      emit(ev, ...args) {
         if (ev === "data") {
           this._readableState.dataEmitted = true;
         } else if (ev === "error") {
           this._readableState.errorEmitted = true;
         }
-        return super.emit(ev, ...args2);
+        return super.emit(ev, ...args);
       }
-      on(ev, ...args2) {
+      on(ev, ...args) {
         if (ev === "data" || ev === "readable") {
           this[kReading] = true;
         }
-        return super.on(ev, ...args2);
+        return super.on(ev, ...args);
       }
-      addListener(ev, ...args2) {
-        return this.on(ev, ...args2);
+      addListener(ev, ...args) {
+        return this.on(ev, ...args);
       }
-      off(ev, ...args2) {
-        const ret = super.off(ev, ...args2);
+      off(ev, ...args) {
+        const ret = super.off(ev, ...args);
         if (ev === "data" || ev === "readable") {
           this[kReading] = this.listenerCount("data") > 0 || this.listenerCount("readable") > 0;
         }
         return ret;
       }
-      removeListener(ev, ...args2) {
-        return this.off(ev, ...args2);
+      removeListener(ev, ...args) {
+        return this.off(ev, ...args);
       }
       push(chunk) {
         if (this[kConsume] && chunk !== null && this.readableLength === 0) {
@@ -11522,26 +11522,26 @@ var require_DecoratorHandler = __commonJS({
       constructor(handler) {
         this.handler = handler;
       }
-      onConnect(...args2) {
-        return this.handler.onConnect(...args2);
+      onConnect(...args) {
+        return this.handler.onConnect(...args);
       }
-      onError(...args2) {
-        return this.handler.onError(...args2);
+      onError(...args) {
+        return this.handler.onError(...args);
       }
-      onUpgrade(...args2) {
-        return this.handler.onUpgrade(...args2);
+      onUpgrade(...args) {
+        return this.handler.onUpgrade(...args);
       }
-      onHeaders(...args2) {
-        return this.handler.onHeaders(...args2);
+      onHeaders(...args) {
+        return this.handler.onHeaders(...args);
       }
-      onData(...args2) {
-        return this.handler.onData(...args2);
+      onData(...args) {
+        return this.handler.onData(...args);
       }
-      onComplete(...args2) {
-        return this.handler.onComplete(...args2);
+      onComplete(...args) {
+        return this.handler.onComplete(...args);
       }
-      onBodySent(...args2) {
-        return this.handler.onBodySent(...args2);
+      onBodySent(...args) {
+        return this.handler.onBodySent(...args);
       }
     };
   }
@@ -18941,13 +18941,13 @@ var require_toolrunner = __commonJS({
     var timers_1 = require("timers");
     var IS_WINDOWS = process.platform === "win32";
     var ToolRunner = class extends events.EventEmitter {
-      constructor(toolPath, args2, options) {
+      constructor(toolPath, args, options) {
         super();
         if (!toolPath) {
           throw new Error("Parameter 'toolPath' cannot be null or empty.");
         }
         this.toolPath = toolPath;
-        this.args = args2 || [];
+        this.args = args || [];
         this.options = options || {};
       }
       _debug(message) {
@@ -18957,28 +18957,28 @@ var require_toolrunner = __commonJS({
       }
       _getCommandString(options, noPrefix) {
         const toolPath = this._getSpawnFileName();
-        const args2 = this._getSpawnArgs(options);
+        const args = this._getSpawnArgs(options);
         let cmd = noPrefix ? "" : "[command]";
         if (IS_WINDOWS) {
           if (this._isCmdFile()) {
             cmd += toolPath;
-            for (const a of args2) {
+            for (const a of args) {
               cmd += ` ${a}`;
             }
           } else if (options.windowsVerbatimArguments) {
             cmd += `"${toolPath}"`;
-            for (const a of args2) {
+            for (const a of args) {
               cmd += ` ${a}`;
             }
           } else {
             cmd += this._windowsQuoteCmdArg(toolPath);
-            for (const a of args2) {
+            for (const a of args) {
               cmd += ` ${this._windowsQuoteCmdArg(a)}`;
             }
           }
         } else {
           cmd += toolPath;
-          for (const a of args2) {
+          for (const a of args) {
             cmd += ` ${a}`;
           }
         }
@@ -19251,7 +19251,7 @@ var require_toolrunner = __commonJS({
     };
     exports2.ToolRunner = ToolRunner;
     function argStringToArray(argString) {
-      const args2 = [];
+      const args = [];
       let inQuotes = false;
       let escaped = false;
       let arg = "";
@@ -19282,7 +19282,7 @@ var require_toolrunner = __commonJS({
         }
         if (c === " " && !inQuotes) {
           if (arg.length > 0) {
-            args2.push(arg);
+            args.push(arg);
             arg = "";
           }
           continue;
@@ -19290,9 +19290,9 @@ var require_toolrunner = __commonJS({
         append(c);
       }
       if (arg.length > 0) {
-        args2.push(arg.trim());
+        args.push(arg.trim());
       }
-      return args2;
+      return args;
     }
     exports2.argStringToArray = argStringToArray;
     var ExecState = class _ExecState extends events.EventEmitter {
@@ -19418,20 +19418,20 @@ var require_exec = __commonJS({
     exports2.getExecOutput = exports2.exec = void 0;
     var string_decoder_1 = require("string_decoder");
     var tr = __importStar(require_toolrunner());
-    function exec(commandLine, args2, options) {
+    function exec(commandLine, args, options) {
       return __awaiter(this, void 0, void 0, function* () {
         const commandArgs = tr.argStringToArray(commandLine);
         if (commandArgs.length === 0) {
           throw new Error(`Parameter 'commandLine' cannot be null or empty.`);
         }
         const toolPath = commandArgs[0];
-        args2 = commandArgs.slice(1).concat(args2 || []);
-        const runner = new tr.ToolRunner(toolPath, args2, options);
+        args = commandArgs.slice(1).concat(args || []);
+        const runner = new tr.ToolRunner(toolPath, args, options);
         return runner.exec();
       });
     }
     exports2.exec = exec;
-    function getExecOutput(commandLine, args2, options) {
+    function getExecOutput(commandLine, args, options) {
       var _a, _b;
       return __awaiter(this, void 0, void 0, function* () {
         let stdout = "";
@@ -19453,7 +19453,7 @@ var require_exec = __commonJS({
           }
         };
         const listeners = Object.assign(Object.assign({}, options === null || options === void 0 ? void 0 : options.listeners), { stdout: stdOutListener, stderr: stdErrListener });
-        const exitCode = yield exec(commandLine, args2, Object.assign(Object.assign({}, options), { listeners }));
+        const exitCode = yield exec(commandLine, args, Object.assign(Object.assign({}, options), { listeners }));
         stdout += stdoutDecoder.end();
         stderr += stderrDecoder.end();
         return {
@@ -21909,7 +21909,7 @@ var require_index_node_C8h2xZEM = __commonJS({
       "upgradedCacheCount"
     ]);
     var invoke = (callback, eventName, logger, telemetryClient, correlationId) => {
-      return (...args2) => {
+      return (...args) => {
         logger.trace(`Executing function ${eventName}`);
         const inProgressEvent = telemetryClient?.startMeasurement(eventName, correlationId);
         if (correlationId) {
@@ -21917,7 +21917,7 @@ var require_index_node_C8h2xZEM = __commonJS({
           telemetryClient?.incrementFields({ [eventCount]: 1 }, correlationId);
         }
         try {
-          const result = callback(...args2);
+          const result = callback(...args);
           inProgressEvent?.end({
             success: true
           });
@@ -21938,7 +21938,7 @@ var require_index_node_C8h2xZEM = __commonJS({
       };
     };
     var invokeAsync = (callback, eventName, logger, telemetryClient, correlationId) => {
-      return (...args2) => {
+      return (...args) => {
         logger.trace(`Executing function ${eventName}`);
         const inProgressEvent = telemetryClient?.startMeasurement(eventName, correlationId);
         if (correlationId) {
@@ -21946,7 +21946,7 @@ var require_index_node_C8h2xZEM = __commonJS({
           telemetryClient?.incrementFields({ [eventCount]: 1 }, correlationId);
         }
         telemetryClient?.setPreQueueTime(eventName, correlationId);
-        return callback(...args2).then((response2) => {
+        return callback(...args).then((response2) => {
           logger.trace(`Returning result from ${eventName}`);
           inProgressEvent?.end({
             success: true
@@ -28010,8 +28010,8 @@ var require_jwa = __commonJS({
       return base64url.replace(/\-/g, "+").replace(/_/g, "/");
     }
     function typeError(template) {
-      var args2 = [].slice.call(arguments, 1);
-      var errMsg = util.format.bind(util, template).apply(null, args2);
+      var args = [].slice.call(arguments, 1);
+      var errMsg = util.format.bind(util, template).apply(null, args);
       return new TypeError(errMsg);
     }
     function bufferOrString(obj) {
@@ -28629,7 +28629,7 @@ var require_constants6 = __commonJS({
 var require_debug = __commonJS({
   "node_modules/semver/internal/debug.js"(exports2, module2) {
     "use strict";
-    var debug = typeof process === "object" && process.env && process.env.NODE_DEBUG && /\bsemver\b/i.test(process.env.NODE_DEBUG) ? (...args2) => console.error("SEMVER", ...args2) : () => {
+    var debug = typeof process === "object" && process.env && process.env.NODE_DEBUG && /\bsemver\b/i.test(process.env.NODE_DEBUG) ? (...args) => console.error("SEMVER", ...args) : () => {
     };
     module2.exports = debug;
   }
@@ -34871,7 +34871,7 @@ var require_msal_node = __commonJS({
       return response2.hasOwnProperty("error") && response2.hasOwnProperty("error_description");
     }
     var invoke = (callback, eventName, logger, telemetryClient, correlationId) => {
-      return (...args2) => {
+      return (...args) => {
         logger.trace(`Executing function ${eventName}`);
         const inProgressEvent = telemetryClient?.startMeasurement(eventName, correlationId);
         if (correlationId) {
@@ -34879,7 +34879,7 @@ var require_msal_node = __commonJS({
           telemetryClient?.incrementFields({ [eventCount]: 1 }, correlationId);
         }
         try {
-          const result = callback(...args2);
+          const result = callback(...args);
           inProgressEvent?.end({
             success: true
           });
@@ -34900,7 +34900,7 @@ var require_msal_node = __commonJS({
       };
     };
     var invokeAsync = (callback, eventName, logger, telemetryClient, correlationId) => {
-      return (...args2) => {
+      return (...args) => {
         logger.trace(`Executing function ${eventName}`);
         const inProgressEvent = telemetryClient?.startMeasurement(eventName, correlationId);
         if (correlationId) {
@@ -34908,7 +34908,7 @@ var require_msal_node = __commonJS({
           telemetryClient?.incrementFields({ [eventCount]: 1 }, correlationId);
         }
         telemetryClient?.setPreQueueTime(eventName, correlationId);
-        return callback(...args2).then((response2) => {
+        return callback(...args).then((response2) => {
           logger.trace(`Returning result from ${eventName}`);
           inProgressEvent?.end({
             success: true
@@ -41546,18 +41546,19 @@ var require_FsnxApiClient = __commonJS({
     var msal = require_msal_node();
     var crypto4 = require("crypto");
     var FsnxApiClient2 = class {
-      constructor({ authority, client_id, client_secret: client_secret2, tenant_id, cloud, output_private_key }) {
+      constructor({ authority, client_id, client_secret: client_secret2, tenant_id, cloud, output_private_key, event_path }) {
         this.authority = authority;
         this.client_id = client_id;
         this.client_secret = client_secret2;
         this.tenant_id = tenant_id;
         this.cloud = cloud;
         this.output_private_key = output_private_key;
+        this.event_path = event_path;
       }
       #ScopeAuthMap = /* @__PURE__ */ new Map();
       #eventInput;
       get EventInput() {
-        return this.#eventInput ??= require(args.event_path);
+        return this.#eventInput ??= require(this.event_path);
       }
       #actions;
       get Actions() {
@@ -41687,7 +41688,7 @@ var core = require_core();
 var { FsnxApiClient } = require_FsnxApiClient();
 (async () => {
   core.startGroup("ensure-security-group");
-  const args2 = {
+  const args = {
     authority: core.getInput("authority"),
     tenant_id: core.getInput("tenant_id"),
     client_secret: core.getInput("client_secret"),
@@ -41696,15 +41697,15 @@ var { FsnxApiClient } = require_FsnxApiClient();
     output_private_key: core.getInput("output_private_key"),
     event_path: core.getInput("event_path")
   };
-  await executeAction(args2);
+  await executeAction(args);
   core.endGroup();
 })().catch((error) => {
   core.endGroup();
   core.setFailed(error.message);
 });
-async function executeAction(args2) {
+async function executeAction(args) {
   core.info("currently running ensure-security-group test");
-  const fsnxClient = new FsnxApiClient(args2);
+  const fsnxClient = new FsnxApiClient(args);
   core.info(JSON.stringify(fsnxClient.EventInput));
   const upsertSecGrpAction = fsnxClient.Actions["group-patch-upsert"];
   core.info(`Adding or updating security group "${upsertSecGrpAction.payload.Content.Body.displayName}"`);

@@ -9,20 +9,21 @@ const crypto = require('crypto');
 
 
 class FsnxApiClient{
-    constructor({authority, client_id, client_secret, tenant_id, cloud, output_private_key}) {
+    constructor({authority, client_id, client_secret, tenant_id, cloud, output_private_key, event_path}) {
         this.authority = authority;
         this.client_id = client_id;
         this.client_secret = client_secret;
         this.tenant_id = tenant_id;
         this.cloud = cloud;
         this.output_private_key = output_private_key;
+        this.event_path = event_path;
     }
 
     #ScopeAuthMap = new Map();
 
     #eventInput;
     get EventInput() {
-        return this.#eventInput ??= require(args.event_path);
+        return this.#eventInput ??= require(this.event_path);
     }
 
     #actions;

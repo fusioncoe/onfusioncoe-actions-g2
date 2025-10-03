@@ -9,7 +9,7 @@ const core = require('@actions/core');
 
 
 const {FsnxApiClient} = require('../../lib/FsnxApiClient.js');
-//const { json } = require('stream/consumers');
+
 
 //const msal = require('@azure/msal-node');
 
