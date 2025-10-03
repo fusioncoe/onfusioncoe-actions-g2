@@ -65,7 +65,7 @@ class FsnxApiClient{
                     auth: {
                         clientId: this.client_id,
                         authority: tenantAuthority.toString(),
-                        clientSecret: client_secret,
+                        clientSecret: this.client_secret,
                     },
                 };
 

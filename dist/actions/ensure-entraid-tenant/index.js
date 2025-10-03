@@ -41546,10 +41546,10 @@ var require_FsnxApiClient = __commonJS({
     var msal = require_msal_node();
     var crypto4 = require("crypto");
     var FsnxApiClient2 = class {
-      constructor({ authority, client_id, client_secret: client_secret2, tenant_id, cloud, output_private_key, event_path }) {
+      constructor({ authority, client_id, client_secret, tenant_id, cloud, output_private_key, event_path }) {
         this.authority = authority;
         this.client_id = client_id;
-        this.client_secret = client_secret2;
+        this.client_secret = client_secret;
         this.tenant_id = tenant_id;
         this.cloud = cloud;
         this.output_private_key = output_private_key;
@@ -41585,7 +41585,7 @@ var require_FsnxApiClient = __commonJS({
             auth: {
               clientId: this.client_id,
               authority: tenantAuthority.toString(),
-              clientSecret: client_secret
+              clientSecret: this.client_secret
             }
           };
           const tokenRequest = {
