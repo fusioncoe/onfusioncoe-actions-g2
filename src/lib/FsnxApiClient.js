@@ -105,23 +105,6 @@ class FsnxApiClient{
                 //console.log(action.type);
 
                 let auth = {Authorization: authHeader};
-
-                // if (payload.Content != null){
-                //     headers['Content-Type'] = "application/json"
-                // }
-
-                // payload.Headers.forEach(h => {
-                //     headers[h.Key] = h.Value
-                // });
-
-                
-                // let reqBody =
-                // {
-                //    method: a_payload.Method,
-                //    headers: {...a_payload?.Content?.Headers ?? {}, ...a_payload?.Headers ?? {}, ...auth},
-                //  };
-
-
                 
                 var reqBody = {}
                 if (a_payload?.Content?.Body != null){
@@ -130,7 +113,7 @@ class FsnxApiClient{
                 
                 //console.log(reqBody);
 
-                response = await fetch(action.payload.RequestUri, 
+                const response = await fetch(action.payload.RequestUri, 
                 {
                     credentials: "include",
                     method: a_payload.Method,
@@ -140,7 +123,7 @@ class FsnxApiClient{
 
                 //console.log(response);
 
-                responseBody = {};
+                const responseBody = {};
                 if (response.body != null)
                 {
                     responseBody.body = await response.json();
@@ -184,7 +167,7 @@ class FsnxApiClient{
 
             //core.info(`processing fetch: ${outUrl}`);        
 
-            outputResponse = await fetch(outUrl, 
+            const outputResponse = await fetch(outUrl, 
             {
             method: "POST",
             headers: { ...outputReqHeaders },

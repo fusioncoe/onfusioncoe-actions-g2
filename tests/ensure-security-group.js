@@ -4,7 +4,7 @@ const fs = require('fs');
 
 const path = require('path');
 
-const FsnxApiClient = require('../src/lib/FsnxApiClient.js');
+const {FsnxApiClient} = require('../src/lib/FsnxApiClient.js');
 const inputs = require('../.testinput/authenticate-cicd-serviceprincipal.json');
 
 const eventInput = require('../.testinput/ensure-security-group.json');
@@ -48,28 +48,16 @@ const cloud = inputs.cloud;
 
 const test = async () => {
 
-    core.info("currently running ensure-security-group test");
+     core.info("currently running ensure-security-group test");
 
-    core.info(JSON.stringify(args))
+    const fsnxClient = new FsnxApiClient(args);
 
-    //const json = convert.xml2json(xml, { compact: true, spaces: 4 });
+    core.info(JSON.stringify(fsnxClient.EventInput));
 
-    core.info(`Event info path is ${args.event_path}`);    
-
-    const eventInput = require(args.event_path);
-
-    core.info("Event input has been collected");    
-
-    const actions = eventInput.client_payload.dispatch_payload.actions;
-
-    // process action 1, upsert
-
-    core.info("Processing Actions");      
-
-    const upsertSecGrpAction = actions[0];
+    const upsertSecGrpAction = fsnxClient.Actions["group-patch-upsert"];
 
     core.info(`Adding or updating security group "${upsertSecGrpAction.payload.Content.Body.displayName}"`)
-    const upsertresponse = await FsnxApiClient.ExecuteHttpAction(upsertSecGrpAction, args.authority,args.client_id,args.client_secret,args.tenant_id)
+    const upsertresponse = await fsnxClient.ExecuteHttpAction("group-patch-upsert");
 
     if (upsertresponse.ok) 
     {
@@ -80,9 +68,9 @@ const test = async () => {
         if (secObj == null )
         {
 
-            const getSecGrpAction = actions[1];
-    
-            const getResponse = await FsnxApiClient.ExecuteHttpAction(getSecGrpAction, args.authority,args.client_id,args.client_secret,args.tenant_id);
+            core.info("Security group already exists.  Retrieving Object Id");
+
+            const getResponse = await fsnxClient.ExecuteHttpAction("group-get-by-uniquename-check");
 
             if (getResponse.ok) {
                 secObj = getResponse.body;
@@ -99,14 +87,15 @@ const test = async () => {
 
         // Test Output Functionality
 
-        FsnxApiClient.SubmitOutput (secObj, eventInput.client_payload, args.output_private_key)
+        fsnxClient.SubmitOutput (secObj)
 
     }
     else
     {
         // TODO:  Throw Exception
 
-    }
+    }   
+
 
 };
 

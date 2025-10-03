@@ -3643,18 +3643,18 @@ var require_util2 = __commonJS({
       supportedHashes = crypto4.getHashes().filter((hash) => possibleRelevantHashes.includes(hash));
     } catch {
     }
-    function responseURL(response2) {
-      const urlList = response2.urlList;
+    function responseURL(response) {
+      const urlList = response.urlList;
       const length = urlList.length;
       return length === 0 ? null : urlList[length - 1].toString();
     }
-    function responseLocationURL(response2, requestFragment) {
-      if (!redirectStatusSet.has(response2.status)) {
+    function responseLocationURL(response, requestFragment) {
+      if (!redirectStatusSet.has(response.status)) {
         return null;
       }
-      let location = response2.headersList.get("location");
+      let location = response.headersList.get("location");
       if (location !== null && isValidHeaderValue(location)) {
-        location = new URL(location, responseURL(response2));
+        location = new URL(location, responseURL(response));
       }
       if (location && !location.hash) {
         location.hash = requestFragment;
@@ -12133,16 +12133,16 @@ var require_response = __commonJS({
       redirect: kEnumerableProperty,
       error: kEnumerableProperty
     });
-    function cloneResponse(response2) {
-      if (response2.internalResponse) {
+    function cloneResponse(response) {
+      if (response.internalResponse) {
         return filterResponse(
-          cloneResponse(response2.internalResponse),
-          response2.type
+          cloneResponse(response.internalResponse),
+          response.type
         );
       }
-      const newResponse = makeResponse({ ...response2, body: null });
-      if (response2.body != null) {
-        newResponse.body = cloneBody(response2.body);
+      const newResponse = makeResponse({ ...response, body: null });
+      if (response.body != null) {
+        newResponse.body = cloneBody(response.body);
       }
       return newResponse;
     }
@@ -12171,12 +12171,12 @@ var require_response = __commonJS({
         aborted: reason && reason.name === "AbortError"
       });
     }
-    function makeFilteredResponse(response2, state) {
+    function makeFilteredResponse(response, state) {
       state = {
-        internalResponse: response2,
+        internalResponse: response,
         ...state
       };
-      return new Proxy(response2, {
+      return new Proxy(response, {
         get(target, p) {
           return p in state ? state[p] : target[p];
         },
@@ -12187,19 +12187,19 @@ var require_response = __commonJS({
         }
       });
     }
-    function filterResponse(response2, type) {
+    function filterResponse(response, type) {
       if (type === "basic") {
-        return makeFilteredResponse(response2, {
+        return makeFilteredResponse(response, {
           type: "basic",
-          headersList: response2.headersList
+          headersList: response.headersList
         });
       } else if (type === "cors") {
-        return makeFilteredResponse(response2, {
+        return makeFilteredResponse(response, {
           type: "cors",
-          headersList: response2.headersList
+          headersList: response.headersList
         });
       } else if (type === "opaque") {
-        return makeFilteredResponse(response2, {
+        return makeFilteredResponse(response, {
           type: "opaque",
           urlList: Object.freeze([]),
           status: 0,
@@ -12207,7 +12207,7 @@ var require_response = __commonJS({
           body: null
         });
       } else if (type === "opaqueredirect") {
-        return makeFilteredResponse(response2, {
+        return makeFilteredResponse(response, {
           type: "opaqueredirect",
           status: 0,
           statusText: "",
@@ -12222,7 +12222,7 @@ var require_response = __commonJS({
       assert(isCancelled(fetchParams));
       return isAborted(fetchParams) ? makeNetworkError(Object.assign(new DOMException2("The operation was aborted.", "AbortError"), { cause: err })) : makeNetworkError(Object.assign(new DOMException2("Request was cancelled."), { cause: err }));
     }
-    function initializeResponse(response2, init, body) {
+    function initializeResponse(response, init, body) {
       if (init.status !== null && (init.status < 200 || init.status > 599)) {
         throw new RangeError('init["status"] must be in the range of 200 to 599, inclusive.');
       }
@@ -12232,24 +12232,24 @@ var require_response = __commonJS({
         }
       }
       if ("status" in init && init.status != null) {
-        response2[kState].status = init.status;
+        response[kState].status = init.status;
       }
       if ("statusText" in init && init.statusText != null) {
-        response2[kState].statusText = init.statusText;
+        response[kState].statusText = init.statusText;
       }
       if ("headers" in init && init.headers != null) {
-        fill(response2[kHeaders], init.headers);
+        fill(response[kHeaders], init.headers);
       }
       if (body) {
-        if (nullBodyStatus.includes(response2.status)) {
+        if (nullBodyStatus.includes(response.status)) {
           throw webidl.errors.exception({
             header: "Response constructor",
-            message: "Invalid response status code " + response2.status
+            message: "Invalid response status code " + response.status
           });
         }
-        response2[kState].body = body.body;
-        if (body.type != null && !response2[kState].headersList.contains("Content-Type")) {
-          response2[kState].headersList.append("content-type", body.type);
+        response[kState].body = body.body;
+        if (body.type != null && !response[kState].headersList.contains("Content-Type")) {
+          response[kState].headersList.append("content-type", body.type);
         }
       }
     }
@@ -13085,25 +13085,25 @@ var require_fetch = __commonJS({
           abortFetch(p, request, responseObject, requestObject.signal.reason);
         }
       );
-      const handleFetchDone = (response2) => finalizeAndReportTiming(response2, "fetch");
-      const processResponse = (response2) => {
+      const handleFetchDone = (response) => finalizeAndReportTiming(response, "fetch");
+      const processResponse = (response) => {
         if (locallyAborted) {
           return Promise.resolve();
         }
-        if (response2.aborted) {
+        if (response.aborted) {
           abortFetch(p, request, responseObject, controller.serializedAbortReason);
           return Promise.resolve();
         }
-        if (response2.type === "error") {
+        if (response.type === "error") {
           p.reject(
-            Object.assign(new TypeError("fetch failed"), { cause: response2.error })
+            Object.assign(new TypeError("fetch failed"), { cause: response.error })
           );
           return Promise.resolve();
         }
         responseObject = new Response();
-        responseObject[kState] = response2;
+        responseObject[kState] = response;
         responseObject[kRealm] = relevantRealm;
-        responseObject[kHeaders][kHeadersList] = response2.headersList;
+        responseObject[kHeaders][kHeadersList] = response.headersList;
         responseObject[kHeaders][kGuard] = "immutable";
         responseObject[kHeaders][kRealm] = relevantRealm;
         p.resolve(responseObject);
@@ -13117,30 +13117,30 @@ var require_fetch = __commonJS({
       });
       return p.promise;
     }
-    function finalizeAndReportTiming(response2, initiatorType = "other") {
-      if (response2.type === "error" && response2.aborted) {
+    function finalizeAndReportTiming(response, initiatorType = "other") {
+      if (response.type === "error" && response.aborted) {
         return;
       }
-      if (!response2.urlList?.length) {
+      if (!response.urlList?.length) {
         return;
       }
-      const originalURL = response2.urlList[0];
-      let timingInfo = response2.timingInfo;
-      let cacheState = response2.cacheState;
+      const originalURL = response.urlList[0];
+      let timingInfo = response.timingInfo;
+      let cacheState = response.cacheState;
       if (!urlIsHttpHttpsScheme(originalURL)) {
         return;
       }
       if (timingInfo === null) {
         return;
       }
-      if (!response2.timingAllowPassed) {
+      if (!response.timingAllowPassed) {
         timingInfo = createOpaqueTimingInfo({
           startTime: timingInfo.startTime
         });
         cacheState = "";
       }
       timingInfo.endTime = coarsenedSharedCurrentTime();
-      response2.timingInfo = timingInfo;
+      response.timingInfo = timingInfo;
       markResourceTiming(
         timingInfo,
         originalURL,
@@ -13170,9 +13170,9 @@ var require_fetch = __commonJS({
       if (responseObject == null) {
         return;
       }
-      const response2 = responseObject[kState];
-      if (response2.body != null && isReadable(response2.body?.stream)) {
-        response2.body.stream.cancel(error).catch((err) => {
+      const response = responseObject[kState];
+      if (response.body != null && isReadable(response.body?.stream)) {
+        response.body.stream.cancel(error).catch((err) => {
           if (err.code === "ERR_INVALID_STATE") {
             return;
           }
@@ -13247,13 +13247,13 @@ var require_fetch = __commonJS({
     }
     async function mainFetch(fetchParams, recursive = false) {
       const request = fetchParams.request;
-      let response2 = null;
+      let response = null;
       if (request.localURLsOnly && !urlIsLocal(requestCurrentURL(request))) {
-        response2 = makeNetworkError("local URLs only");
+        response = makeNetworkError("local URLs only");
       }
       tryUpgradeRequestToAPotentiallyTrustworthyURL(request);
       if (requestBadPort(request) === "blocked") {
-        response2 = makeNetworkError("bad port");
+        response = makeNetworkError("bad port");
       }
       if (request.referrerPolicy === "") {
         request.referrerPolicy = request.policyContainer.referrerPolicy;
@@ -13261,8 +13261,8 @@ var require_fetch = __commonJS({
       if (request.referrer !== "no-referrer") {
         request.referrer = determineRequestsReferrer(request);
       }
-      if (response2 === null) {
-        response2 = await (async () => {
+      if (response === null) {
+        response = await (async () => {
           const currentURL = requestCurrentURL(request);
           if (
             // - request’s current URL’s origin is same origin with request’s origin,
@@ -13294,39 +13294,39 @@ var require_fetch = __commonJS({
         })();
       }
       if (recursive) {
-        return response2;
+        return response;
       }
-      if (response2.status !== 0 && !response2.internalResponse) {
+      if (response.status !== 0 && !response.internalResponse) {
         if (request.responseTainting === "cors") {
         }
         if (request.responseTainting === "basic") {
-          response2 = filterResponse(response2, "basic");
+          response = filterResponse(response, "basic");
         } else if (request.responseTainting === "cors") {
-          response2 = filterResponse(response2, "cors");
+          response = filterResponse(response, "cors");
         } else if (request.responseTainting === "opaque") {
-          response2 = filterResponse(response2, "opaque");
+          response = filterResponse(response, "opaque");
         } else {
           assert(false);
         }
       }
-      let internalResponse = response2.status === 0 ? response2 : response2.internalResponse;
+      let internalResponse = response.status === 0 ? response : response.internalResponse;
       if (internalResponse.urlList.length === 0) {
         internalResponse.urlList.push(...request.urlList);
       }
       if (!request.timingAllowFailed) {
-        response2.timingAllowPassed = true;
+        response.timingAllowPassed = true;
       }
-      if (response2.type === "opaque" && internalResponse.status === 206 && internalResponse.rangeRequested && !request.headers.contains("range")) {
-        response2 = internalResponse = makeNetworkError();
+      if (response.type === "opaque" && internalResponse.status === 206 && internalResponse.rangeRequested && !request.headers.contains("range")) {
+        response = internalResponse = makeNetworkError();
       }
-      if (response2.status !== 0 && (request.method === "HEAD" || request.method === "CONNECT" || nullBodyStatus.includes(internalResponse.status))) {
+      if (response.status !== 0 && (request.method === "HEAD" || request.method === "CONNECT" || nullBodyStatus.includes(internalResponse.status))) {
         internalResponse.body = null;
         fetchParams.controller.dump = true;
       }
       if (request.integrity) {
         const processBodyError = (reason) => fetchFinale(fetchParams, makeNetworkError(reason));
-        if (request.responseTainting === "opaque" || response2.body == null) {
-          processBodyError(response2.error);
+        if (request.responseTainting === "opaque" || response.body == null) {
+          processBodyError(response.error);
           return;
         }
         const processBody = (bytes) => {
@@ -13334,12 +13334,12 @@ var require_fetch = __commonJS({
             processBodyError("integrity mismatch");
             return;
           }
-          response2.body = safelyExtractBody(bytes)[0];
-          fetchFinale(fetchParams, response2);
+          response.body = safelyExtractBody(bytes)[0];
+          fetchFinale(fetchParams, response);
         };
-        await fullyReadBody(response2.body, processBody, processBodyError);
+        await fullyReadBody(response.body, processBody, processBodyError);
       } else {
-        fetchFinale(fetchParams, response2);
+        fetchFinale(fetchParams, response);
       }
     }
     function schemeFetch(fetchParams) {
@@ -13368,15 +13368,15 @@ var require_fetch = __commonJS({
           const body = bodyWithType[0];
           const length = isomorphicEncode(`${body.length}`);
           const type = bodyWithType[1] ?? "";
-          const response2 = makeResponse({
+          const response = makeResponse({
             statusText: "OK",
             headersList: [
               ["content-length", { name: "Content-Length", value: length }],
               ["content-type", { name: "Content-Type", value: type }]
             ]
           });
-          response2.body = body;
-          return Promise.resolve(response2);
+          response.body = body;
+          return Promise.resolve(response);
         }
         case "data:": {
           const currentURL = requestCurrentURL(request);
@@ -13405,29 +13405,29 @@ var require_fetch = __commonJS({
         }
       }
     }
-    function finalizeResponse(fetchParams, response2) {
+    function finalizeResponse(fetchParams, response) {
       fetchParams.request.done = true;
       if (fetchParams.processResponseDone != null) {
-        queueMicrotask(() => fetchParams.processResponseDone(response2));
+        queueMicrotask(() => fetchParams.processResponseDone(response));
       }
     }
-    function fetchFinale(fetchParams, response2) {
-      if (response2.type === "error") {
-        response2.urlList = [fetchParams.request.urlList[0]];
-        response2.timingInfo = createOpaqueTimingInfo({
+    function fetchFinale(fetchParams, response) {
+      if (response.type === "error") {
+        response.urlList = [fetchParams.request.urlList[0]];
+        response.timingInfo = createOpaqueTimingInfo({
           startTime: fetchParams.timingInfo.startTime
         });
       }
       const processResponseEndOfBody = () => {
         fetchParams.request.done = true;
         if (fetchParams.processResponseEndOfBody != null) {
-          queueMicrotask(() => fetchParams.processResponseEndOfBody(response2));
+          queueMicrotask(() => fetchParams.processResponseEndOfBody(response));
         }
       };
       if (fetchParams.processResponse != null) {
-        queueMicrotask(() => fetchParams.processResponse(response2));
+        queueMicrotask(() => fetchParams.processResponse(response));
       }
-      if (response2.body == null) {
+      if (response.body == null) {
         processResponseEndOfBody();
       } else {
         const identityTransformAlgorithm = (chunk, controller) => {
@@ -13447,39 +13447,39 @@ var require_fetch = __commonJS({
             return 1;
           }
         });
-        response2.body = { stream: response2.body.stream.pipeThrough(transformStream) };
+        response.body = { stream: response.body.stream.pipeThrough(transformStream) };
       }
       if (fetchParams.processResponseConsumeBody != null) {
-        const processBody = (nullOrBytes) => fetchParams.processResponseConsumeBody(response2, nullOrBytes);
-        const processBodyError = (failure) => fetchParams.processResponseConsumeBody(response2, failure);
-        if (response2.body == null) {
+        const processBody = (nullOrBytes) => fetchParams.processResponseConsumeBody(response, nullOrBytes);
+        const processBodyError = (failure) => fetchParams.processResponseConsumeBody(response, failure);
+        if (response.body == null) {
           queueMicrotask(() => processBody(null));
         } else {
-          return fullyReadBody(response2.body, processBody, processBodyError);
+          return fullyReadBody(response.body, processBody, processBodyError);
         }
         return Promise.resolve();
       }
     }
     async function httpFetch(fetchParams) {
       const request = fetchParams.request;
-      let response2 = null;
+      let response = null;
       let actualResponse = null;
       const timingInfo = fetchParams.timingInfo;
       if (request.serviceWorkers === "all") {
       }
-      if (response2 === null) {
+      if (response === null) {
         if (request.redirect === "follow") {
           request.serviceWorkers = "none";
         }
-        actualResponse = response2 = await httpNetworkOrCacheFetch(fetchParams);
-        if (request.responseTainting === "cors" && corsCheck(request, response2) === "failure") {
+        actualResponse = response = await httpNetworkOrCacheFetch(fetchParams);
+        if (request.responseTainting === "cors" && corsCheck(request, response) === "failure") {
           return makeNetworkError("cors failure");
         }
-        if (TAOCheck(request, response2) === "failure") {
+        if (TAOCheck(request, response) === "failure") {
           request.timingAllowFailed = true;
         }
       }
-      if ((request.responseTainting === "opaque" || response2.type === "opaque") && crossOriginResourcePolicyCheck(
+      if ((request.responseTainting === "opaque" || response.type === "opaque") && crossOriginResourcePolicyCheck(
         request.origin,
         request.client,
         request.destination,
@@ -13492,21 +13492,21 @@ var require_fetch = __commonJS({
           fetchParams.controller.connection.destroy();
         }
         if (request.redirect === "error") {
-          response2 = makeNetworkError("unexpected redirect");
+          response = makeNetworkError("unexpected redirect");
         } else if (request.redirect === "manual") {
-          response2 = actualResponse;
+          response = actualResponse;
         } else if (request.redirect === "follow") {
-          response2 = await httpRedirectFetch(fetchParams, response2);
+          response = await httpRedirectFetch(fetchParams, response);
         } else {
           assert(false);
         }
       }
-      response2.timingInfo = timingInfo;
-      return response2;
+      response.timingInfo = timingInfo;
+      return response;
     }
-    function httpRedirectFetch(fetchParams, response2) {
+    function httpRedirectFetch(fetchParams, response) {
       const request = fetchParams.request;
-      const actualResponse = response2.internalResponse ? response2.internalResponse : response2;
+      const actualResponse = response.internalResponse ? response.internalResponse : response;
       let locationURL;
       try {
         locationURL = responseLocationURL(
@@ -13514,7 +13514,7 @@ var require_fetch = __commonJS({
           requestCurrentURL(request).hash
         );
         if (locationURL == null) {
-          return response2;
+          return response;
         }
       } catch (err) {
         return Promise.resolve(makeNetworkError(err));
@@ -13567,7 +13567,7 @@ var require_fetch = __commonJS({
       const request = fetchParams.request;
       let httpFetchParams = null;
       let httpRequest = null;
-      let response2 = null;
+      let response = null;
       const httpCache = null;
       const revalidatingFlag = false;
       if (request.window === "no-window" && request.redirect === "error") {
@@ -13632,7 +13632,7 @@ var require_fetch = __commonJS({
       }
       if (httpRequest.mode !== "no-store" && httpRequest.mode !== "reload") {
       }
-      if (response2 == null) {
+      if (response == null) {
         if (httpRequest.mode === "only-if-cached") {
           return makeNetworkError("only if cached");
         }
@@ -13645,16 +13645,16 @@ var require_fetch = __commonJS({
         }
         if (revalidatingFlag && forwardResponse.status === 304) {
         }
-        if (response2 == null) {
-          response2 = forwardResponse;
+        if (response == null) {
+          response = forwardResponse;
         }
       }
-      response2.urlList = [...httpRequest.urlList];
+      response.urlList = [...httpRequest.urlList];
       if (httpRequest.headersList.contains("range")) {
-        response2.rangeRequested = true;
+        response.rangeRequested = true;
       }
-      response2.requestIncludesCredentials = includeCredentials;
-      if (response2.status === 407) {
+      response.requestIncludesCredentials = includeCredentials;
+      if (response.status === 407) {
         if (request.window === "no-window") {
           return makeNetworkError();
         }
@@ -13665,7 +13665,7 @@ var require_fetch = __commonJS({
       }
       if (
         // response’s status is 421
-        response2.status === 421 && // isNewConnectionFetch is false
+        response.status === 421 && // isNewConnectionFetch is false
         !isNewConnectionFetch && // request’s body is null, or request’s body is non-null and request’s body’s source is non-null
         (request.body == null || request.body.source != null)
       ) {
@@ -13673,7 +13673,7 @@ var require_fetch = __commonJS({
           return makeAppropriateNetworkError(fetchParams);
         }
         fetchParams.controller.connection.destroy();
-        response2 = await httpNetworkOrCacheFetch(
+        response = await httpNetworkOrCacheFetch(
           fetchParams,
           isAuthenticationFetch,
           true
@@ -13681,7 +13681,7 @@ var require_fetch = __commonJS({
       }
       if (isAuthenticationFetch) {
       }
-      return response2;
+      return response;
     }
     async function httpNetworkFetch(fetchParams, includeCredentials = false, forceNewConnection = false) {
       assert(!fetchParams.controller.connection || fetchParams.controller.connection.destroyed);
@@ -13696,7 +13696,7 @@ var require_fetch = __commonJS({
         }
       };
       const request = fetchParams.request;
-      let response2 = null;
+      let response = null;
       const timingInfo = fetchParams.timingInfo;
       const httpCache = null;
       if (httpCache == null) {
@@ -13749,11 +13749,11 @@ var require_fetch = __commonJS({
       try {
         const { body, status, statusText, headersList, socket } = await dispatch({ body: requestBody });
         if (socket) {
-          response2 = makeResponse({ status, statusText, headersList, socket });
+          response = makeResponse({ status, statusText, headersList, socket });
         } else {
           const iterator = body[Symbol.asyncIterator]();
           fetchParams.controller.next = () => iterator.next();
-          response2 = makeResponse({ status, statusText, headersList });
+          response = makeResponse({ status, statusText, headersList });
         }
       } catch (err) {
         if (err.name === "AbortError") {
@@ -13790,7 +13790,7 @@ var require_fetch = __commonJS({
           }
         }
       );
-      response2.body = { stream };
+      response.body = { stream };
       fetchParams.controller.on("terminated", onAborted);
       fetchParams.controller.resume = async () => {
         while (true) {
@@ -13812,7 +13812,7 @@ var require_fetch = __commonJS({
           }
           if (bytes === void 0) {
             readableStreamClose(fetchParams.controller.controller);
-            finalizeResponse(fetchParams, response2);
+            finalizeResponse(fetchParams, response);
             return;
           }
           timingInfo.decodedBodySize += bytes?.byteLength ?? 0;
@@ -13832,7 +13832,7 @@ var require_fetch = __commonJS({
       };
       function onAborted(reason) {
         if (isAborted(fetchParams)) {
-          response2.aborted = true;
+          response.aborted = true;
           if (isReadable(stream)) {
             fetchParams.controller.controller.error(
               fetchParams.controller.serializedAbortReason
@@ -13847,7 +13847,7 @@ var require_fetch = __commonJS({
         }
         fetchParams.controller.connection.destroy();
       }
-      return response2;
+      return response;
       async function dispatch({ body }) {
         const url = requestCurrentURL(request);
         const agent = fetchParams.controller.dispatcher;
@@ -14914,12 +14914,12 @@ var require_cache = __commonJS({
           }
         }
         const responseList = [];
-        for (const response2 of responses) {
-          const responseObject = new Response(response2.body?.source ?? null);
+        for (const response of responses) {
+          const responseObject = new Response(response.body?.source ?? null);
           const body = responseObject[kState].body;
-          responseObject[kState] = response2;
+          responseObject[kState] = response;
           responseObject[kState].body = body;
-          responseObject[kHeaders][kHeadersList] = response2.headersList;
+          responseObject[kHeaders][kHeadersList] = response.headersList;
           responseObject[kHeaders][kGuard] = "immutable";
           responseList.push(responseObject);
         }
@@ -14967,14 +14967,14 @@ var require_cache = __commonJS({
           fetchControllers.push(fetching({
             request: r,
             dispatcher: getGlobalDispatcher(),
-            processResponse(response2) {
-              if (response2.type === "error" || response2.status === 206 || response2.status < 200 || response2.status > 299) {
+            processResponse(response) {
+              if (response.type === "error" || response.status === 206 || response.status < 200 || response.status > 299) {
                 responsePromise.reject(webidl.errors.exception({
                   header: "Cache.addAll",
                   message: "Received an invalid status code or the request failed."
                 }));
-              } else if (response2.headersList.contains("vary")) {
-                const fieldValues = getFieldValues(response2.headersList.get("vary"));
+              } else if (response.headersList.contains("vary")) {
+                const fieldValues = getFieldValues(response.headersList.get("vary"));
                 for (const fieldValue of fieldValues) {
                   if (fieldValue === "*") {
                     responsePromise.reject(webidl.errors.exception({
@@ -14989,12 +14989,12 @@ var require_cache = __commonJS({
                 }
               }
             },
-            processResponseEndOfBody(response2) {
-              if (response2.aborted) {
+            processResponseEndOfBody(response) {
+              if (response.aborted) {
                 responsePromise.reject(new DOMException("aborted", "AbortError"));
                 return;
               }
-              responsePromise.resolve(response2);
+              responsePromise.resolve(response);
             }
           }));
           responsePromises.push(responsePromise.promise);
@@ -15003,13 +15003,13 @@ var require_cache = __commonJS({
         const responses = await p;
         const operations = [];
         let index = 0;
-        for (const response2 of responses) {
+        for (const response of responses) {
           const operation = {
             type: "put",
             // 7.3.2
             request: requestList[index],
             // 7.3.3
-            response: response2
+            response
             // 7.3.4
           };
           operations.push(operation);
@@ -15031,11 +15031,11 @@ var require_cache = __commonJS({
         });
         return cacheJobPromise.promise;
       }
-      async put(request, response2) {
+      async put(request, response) {
         webidl.brandCheck(this, _Cache);
         webidl.argumentLengthCheck(arguments, 2, { header: "Cache.put" });
         request = webidl.converters.RequestInfo(request);
-        response2 = webidl.converters.Response(response2);
+        response = webidl.converters.Response(response);
         let innerRequest = null;
         if (request instanceof Request) {
           innerRequest = request[kState];
@@ -15048,7 +15048,7 @@ var require_cache = __commonJS({
             message: "Expected an http/s scheme when method is not GET"
           });
         }
-        const innerResponse = response2[kState];
+        const innerResponse = response[kState];
         if (innerResponse.status === 206) {
           throw webidl.errors.exception({
             header: "Cache.put",
@@ -15305,7 +15305,7 @@ var require_cache = __commonJS({
        * @param {import('../../types/cache').CacheQueryOptions | undefined} options
        * @returns {boolean}
        */
-      #requestMatchesCachedItem(requestQuery, request, response2 = null, options) {
+      #requestMatchesCachedItem(requestQuery, request, response = null, options) {
         const queryURL = new URL(requestQuery.url);
         const cachedURL = new URL(request.url);
         if (options?.ignoreSearch) {
@@ -15315,10 +15315,10 @@ var require_cache = __commonJS({
         if (!urlEquals(queryURL, cachedURL, true)) {
           return false;
         }
-        if (response2 == null || options?.ignoreVary || !response2.headersList.contains("vary")) {
+        if (response == null || options?.ignoreVary || !response.headersList.contains("vary")) {
           return true;
         }
-        const fieldValues = getFieldValues(response2.headersList.get("vary"));
+        const fieldValues = getFieldValues(response.headersList.get("vary"));
         for (const fieldValue of fieldValues) {
           if (fieldValue === "*") {
             return false;
@@ -15413,9 +15413,9 @@ var require_cachestorage = __commonJS({
         } else {
           for (const cacheList of this.#caches.values()) {
             const cache = new Cache(kConstruct, cacheList);
-            const response2 = await cache.match(request, options);
-            if (response2 !== void 0) {
-              return response2;
+            const response = await cache.match(request, options);
+            if (response !== void 0) {
+              return response;
             }
           }
         }
@@ -16282,10 +16282,10 @@ var require_util7 = __commonJS({
       return code >= 3e3 && code <= 4999;
     }
     function failWebsocketConnection(ws, reason) {
-      const { [kController]: controller, [kResponse]: response2 } = ws;
+      const { [kController]: controller, [kResponse]: response } = ws;
       controller.abort();
-      if (response2?.socket && !response2.socket.destroyed) {
-        response2.socket.destroy();
+      if (response?.socket && !response.socket.destroyed) {
+        response.socket.destroy();
       }
       if (reason) {
         fireEvent("error", ws, ErrorEvent, {
@@ -16361,50 +16361,50 @@ var require_connection = __commonJS({
         request,
         useParallelQueue: true,
         dispatcher: options.dispatcher ?? getGlobalDispatcher(),
-        processResponse(response2) {
-          if (response2.type === "error" || response2.status !== 101) {
+        processResponse(response) {
+          if (response.type === "error" || response.status !== 101) {
             failWebsocketConnection(ws, "Received network error or non-101 status code.");
             return;
           }
-          if (protocols.length !== 0 && !response2.headersList.get("Sec-WebSocket-Protocol")) {
+          if (protocols.length !== 0 && !response.headersList.get("Sec-WebSocket-Protocol")) {
             failWebsocketConnection(ws, "Server did not respond with sent protocols.");
             return;
           }
-          if (response2.headersList.get("Upgrade")?.toLowerCase() !== "websocket") {
+          if (response.headersList.get("Upgrade")?.toLowerCase() !== "websocket") {
             failWebsocketConnection(ws, 'Server did not set Upgrade header to "websocket".');
             return;
           }
-          if (response2.headersList.get("Connection")?.toLowerCase() !== "upgrade") {
+          if (response.headersList.get("Connection")?.toLowerCase() !== "upgrade") {
             failWebsocketConnection(ws, 'Server did not set Connection header to "upgrade".');
             return;
           }
-          const secWSAccept = response2.headersList.get("Sec-WebSocket-Accept");
+          const secWSAccept = response.headersList.get("Sec-WebSocket-Accept");
           const digest = crypto4.createHash("sha1").update(keyValue + uid).digest("base64");
           if (secWSAccept !== digest) {
             failWebsocketConnection(ws, "Incorrect hash received in Sec-WebSocket-Accept header.");
             return;
           }
-          const secExtension = response2.headersList.get("Sec-WebSocket-Extensions");
+          const secExtension = response.headersList.get("Sec-WebSocket-Extensions");
           if (secExtension !== null && secExtension !== permessageDeflate) {
             failWebsocketConnection(ws, "Received different permessage-deflate than the one set.");
             return;
           }
-          const secProtocol = response2.headersList.get("Sec-WebSocket-Protocol");
+          const secProtocol = response.headersList.get("Sec-WebSocket-Protocol");
           if (secProtocol !== null && secProtocol !== request.headersList.get("Sec-WebSocket-Protocol")) {
             failWebsocketConnection(ws, "Protocol was not set in the opening handshake.");
             return;
           }
-          response2.socket.on("data", onSocketData);
-          response2.socket.on("close", onSocketClose);
-          response2.socket.on("error", onSocketError);
+          response.socket.on("data", onSocketData);
+          response.socket.on("close", onSocketClose);
+          response.socket.on("error", onSocketError);
           if (channels.open.hasSubscribers) {
             channels.open.publish({
-              address: response2.socket.address(),
+              address: response.socket.address(),
               protocol: secProtocol,
               extensions: secExtension
             });
           }
-          onEstablish(response2);
+          onEstablish(response);
         }
       });
       return controller;
@@ -16834,7 +16834,7 @@ var require_websocket = __commonJS({
           urlRecord,
           protocols,
           this,
-          (response2) => this.#onConnectionEstablished(response2),
+          (response) => this.#onConnectionEstablished(response),
           options
         );
         this[kReadyState] = _WebSocket.CONNECTING;
@@ -17046,20 +17046,20 @@ var require_websocket = __commonJS({
       /**
        * @see https://websockets.spec.whatwg.org/#feedback-from-the-protocol
        */
-      #onConnectionEstablished(response2) {
-        this[kResponse] = response2;
+      #onConnectionEstablished(response) {
+        this[kResponse] = response;
         const parser = new ByteParser(this);
         parser.on("drain", function onParserDrain() {
           this.ws[kResponse].socket.resume();
         });
-        response2.socket.ws = this;
+        response.socket.ws = this;
         this[kByteParser] = parser;
         this[kReadyState] = states.OPEN;
-        const extensions = response2.headersList.get("sec-websocket-extensions");
+        const extensions = response.headersList.get("sec-websocket-extensions");
         if (extensions !== null) {
           this.#extensions = extensions;
         }
-        const protocol = response2.headersList.get("sec-websocket-protocol");
+        const protocol = response.headersList.get("sec-websocket-protocol");
         if (protocol !== null) {
           this.#protocol = protocol;
         }
@@ -17591,13 +17591,13 @@ var require_lib = __commonJS({
           let info = this._prepareRequest(verb, parsedUrl, headers);
           const maxTries = this._allowRetries && RetryableHttpVerbs.includes(verb) ? this._maxRetries + 1 : 1;
           let numTries = 0;
-          let response2;
+          let response;
           do {
-            response2 = yield this.requestRaw(info, data);
-            if (response2 && response2.message && response2.message.statusCode === HttpCodes.Unauthorized) {
+            response = yield this.requestRaw(info, data);
+            if (response && response.message && response.message.statusCode === HttpCodes.Unauthorized) {
               let authenticationHandler;
               for (const handler of this.handlers) {
-                if (handler.canHandleAuthentication(response2)) {
+                if (handler.canHandleAuthentication(response)) {
                   authenticationHandler = handler;
                   break;
                 }
@@ -17605,12 +17605,12 @@ var require_lib = __commonJS({
               if (authenticationHandler) {
                 return authenticationHandler.handleAuthentication(this, info, data);
               } else {
-                return response2;
+                return response;
               }
             }
             let redirectsRemaining = this._maxRedirects;
-            while (response2.message.statusCode && HttpRedirectCodes.includes(response2.message.statusCode) && this._allowRedirects && redirectsRemaining > 0) {
-              const redirectUrl = response2.message.headers["location"];
+            while (response.message.statusCode && HttpRedirectCodes.includes(response.message.statusCode) && this._allowRedirects && redirectsRemaining > 0) {
+              const redirectUrl = response.message.headers["location"];
               if (!redirectUrl) {
                 break;
               }
@@ -17618,7 +17618,7 @@ var require_lib = __commonJS({
               if (parsedUrl.protocol === "https:" && parsedUrl.protocol !== parsedRedirectUrl.protocol && !this._allowRedirectDowngrade) {
                 throw new Error("Redirect from HTTPS to HTTP protocol. This downgrade is not allowed for security reasons. If you want to allow this behavior, set the allowRedirectDowngrade option to true.");
               }
-              yield response2.readBody();
+              yield response.readBody();
               if (parsedRedirectUrl.hostname !== parsedUrl.hostname) {
                 for (const header in headers) {
                   if (header.toLowerCase() === "authorization") {
@@ -17627,19 +17627,19 @@ var require_lib = __commonJS({
                 }
               }
               info = this._prepareRequest(verb, parsedRedirectUrl, headers);
-              response2 = yield this.requestRaw(info, data);
+              response = yield this.requestRaw(info, data);
               redirectsRemaining--;
             }
-            if (!response2.message.statusCode || !HttpResponseRetryCodes.includes(response2.message.statusCode)) {
-              return response2;
+            if (!response.message.statusCode || !HttpResponseRetryCodes.includes(response.message.statusCode)) {
+              return response;
             }
             numTries += 1;
             if (numTries < maxTries) {
-              yield response2.readBody();
+              yield response.readBody();
               yield this._performExponentialBackoff(numTries);
             }
           } while (numTries < maxTries);
-          return response2;
+          return response;
         });
       }
       /**
@@ -17854,13 +17854,13 @@ var require_lib = __commonJS({
         return __awaiter(this, void 0, void 0, function* () {
           return new Promise((resolve, reject) => __awaiter(this, void 0, void 0, function* () {
             const statusCode = res.message.statusCode || 0;
-            const response2 = {
+            const response = {
               statusCode,
               result: null,
               headers: {}
             };
             if (statusCode === HttpCodes.NotFound) {
-              resolve(response2);
+              resolve(response);
             }
             function dateTimeDeserializer(key, value) {
               if (typeof value === "string") {
@@ -17881,9 +17881,9 @@ var require_lib = __commonJS({
                 } else {
                   obj = JSON.parse(contents);
                 }
-                response2.result = obj;
+                response.result = obj;
               }
-              response2.headers = res.message.headers;
+              response.headers = res.message.headers;
             } catch (err) {
             }
             if (statusCode > 299) {
@@ -17896,10 +17896,10 @@ var require_lib = __commonJS({
                 msg = `Failed request: (${statusCode})`;
               }
               const err = new HttpClientError(msg, statusCode);
-              err.result = response2.result;
+              err.result = response.result;
               reject(err);
             } else {
-              resolve(response2);
+              resolve(response);
             }
           }));
         });
@@ -20801,8 +20801,8 @@ var require_index_node_C8h2xZEM = __commonJS({
       Dsts: 2,
       Ciam: 3
     };
-    function isOpenIdConfigResponse(response2) {
-      return response2.hasOwnProperty("authorization_endpoint") && response2.hasOwnProperty("token_endpoint") && response2.hasOwnProperty("issuer") && response2.hasOwnProperty("jwks_uri");
+    function isOpenIdConfigResponse(response) {
+      return response.hasOwnProperty("authorization_endpoint") && response.hasOwnProperty("token_endpoint") && response.hasOwnProperty("issuer") && response.hasOwnProperty("jwks_uri");
     }
     var redirectUriEmpty = "redirect_uri_empty";
     var claimsRequestParsingError = "claims_request_parsing_error";
@@ -21256,8 +21256,8 @@ var require_index_node_C8h2xZEM = __commonJS({
        * Check if the hash of the URL string contains known properties
        * @deprecated This API will be removed in a future version
        */
-      static hashContainsKnownProperties(response2) {
-        return !!getDeserializedResponse(response2);
+      static hashContainsKnownProperties(response) {
+        return !!getDeserializedResponse(response);
       }
     };
     var rawMetdataJSON = {
@@ -21359,9 +21359,9 @@ var require_index_node_C8h2xZEM = __commonJS({
       const metadata = getCloudDiscoveryMetadataFromNetworkResponse(InstanceDiscoveryMetadata.metadata, authorityHost);
       return metadata;
     }
-    function getCloudDiscoveryMetadataFromNetworkResponse(response2, authorityHost) {
-      for (let i = 0; i < response2.length; i++) {
-        const metadata = response2[i];
+    function getCloudDiscoveryMetadataFromNetworkResponse(response, authorityHost) {
+      for (let i = 0; i < response.length; i++) {
+        const metadata = response[i];
         if (metadata.aliases.includes(authorityHost)) {
           return metadata;
         }
@@ -21397,11 +21397,11 @@ var require_index_node_C8h2xZEM = __commonJS({
       // US Government cloud
       AzureUsGovernment: "https://login.microsoftonline.us"
     };
-    function isCloudInstanceDiscoveryResponse(response2) {
-      return response2.hasOwnProperty("tenant_discovery_endpoint") && response2.hasOwnProperty("metadata");
+    function isCloudInstanceDiscoveryResponse(response) {
+      return response.hasOwnProperty("tenant_discovery_endpoint") && response.hasOwnProperty("metadata");
     }
-    function isCloudInstanceDiscoveryErrorResponse(response2) {
-      return response2.hasOwnProperty("error") && response2.hasOwnProperty("error_description");
+    function isCloudInstanceDiscoveryErrorResponse(response) {
+      return response.hasOwnProperty("error") && response.hasOwnProperty("error_description");
     }
     var PerformanceEvents = {
       /**
@@ -21946,12 +21946,12 @@ var require_index_node_C8h2xZEM = __commonJS({
           telemetryClient?.incrementFields({ [eventCount]: 1 }, correlationId);
         }
         telemetryClient?.setPreQueueTime(eventName, correlationId);
-        return callback(...args).then((response2) => {
+        return callback(...args).then((response) => {
           logger.trace(`Returning result from ${eventName}`);
           inProgressEvent?.end({
             success: true
           });
-          return response2;
+          return response;
         }).catch((e) => {
           logger.trace(`Error occurred in ${eventName}`);
           try {
@@ -22031,9 +22031,9 @@ var require_index_node_C8h2xZEM = __commonJS({
       async getCurrentVersion(options) {
         this.performanceClient?.addQueueMeasurement(PerformanceEvents.RegionDiscoveryGetCurrentVersion, this.correlationId);
         try {
-          const response2 = await this.networkInterface.sendGetRequestAsync(`${Constants.IMDS_ENDPOINT}?format=json`, options);
-          if (response2.status === HttpStatus.BAD_REQUEST && response2.body && response2.body["newest-versions"] && response2.body["newest-versions"].length > 0) {
-            return response2.body["newest-versions"][0];
+          const response = await this.networkInterface.sendGetRequestAsync(`${Constants.IMDS_ENDPOINT}?format=json`, options);
+          if (response.status === HttpStatus.BAD_REQUEST && response.body && response.body["newest-versions"] && response.body["newest-versions"].length > 0) {
+            return response.body["newest-versions"][0];
           }
           return null;
         } catch (e) {
@@ -22627,10 +22627,10 @@ var require_index_node_C8h2xZEM = __commonJS({
         const openIdConfigurationEndpoint = this.defaultOpenIdConfigurationEndpoint;
         this.logger.verbose(`Authority.getEndpointMetadataFromNetwork: attempting to retrieve OAuth endpoints from ${openIdConfigurationEndpoint}`);
         try {
-          const response2 = await this.networkInterface.sendGetRequestAsync(openIdConfigurationEndpoint, options);
-          const isValidResponse = isOpenIdConfigResponse(response2.body);
+          const response = await this.networkInterface.sendGetRequestAsync(openIdConfigurationEndpoint, options);
+          const isValidResponse = isOpenIdConfigResponse(response.body);
           if (isValidResponse) {
-            return response2.body;
+            return response.body;
           } else {
             this.logger.verbose(`Authority.getEndpointMetadataFromNetwork: could not parse response as OpenID configuration`);
             return null;
@@ -22766,16 +22766,16 @@ var require_index_node_C8h2xZEM = __commonJS({
         const options = {};
         let match = null;
         try {
-          const response2 = await this.networkInterface.sendGetRequestAsync(instanceDiscoveryEndpoint, options);
+          const response = await this.networkInterface.sendGetRequestAsync(instanceDiscoveryEndpoint, options);
           let typedResponseBody;
           let metadata;
-          if (isCloudInstanceDiscoveryResponse(response2.body)) {
-            typedResponseBody = response2.body;
+          if (isCloudInstanceDiscoveryResponse(response.body)) {
+            typedResponseBody = response.body;
             metadata = typedResponseBody.metadata;
             this.logger.verbosePii(`tenant_discovery_endpoint is: ${typedResponseBody.tenant_discovery_endpoint}`);
-          } else if (isCloudInstanceDiscoveryErrorResponse(response2.body)) {
-            this.logger.warning(`A CloudInstanceDiscoveryErrorResponse was returned. The cloud instance discovery network request's status code is: ${response2.status}`);
-            typedResponseBody = response2.body;
+          } else if (isCloudInstanceDiscoveryErrorResponse(response.body)) {
+            this.logger.warning(`A CloudInstanceDiscoveryErrorResponse was returned. The cloud instance discovery network request's status code is: ${response.status}`);
+            typedResponseBody = response.body;
             if (typedResponseBody.error === Constants.INVALID_INSTANCE) {
               this.logger.error("The CloudInstanceDiscoveryErrorResponse error is invalid_instance.");
               return null;
@@ -25029,14 +25029,14 @@ Error Description: ${typedError.message}`);
        * @param thumbprint
        * @param response
        */
-      static postProcess(cacheManager, thumbprint, response2, correlationId) {
-        if (_ThrottlingUtils.checkResponseStatus(response2) || _ThrottlingUtils.checkResponseForRetryAfter(response2)) {
+      static postProcess(cacheManager, thumbprint, response, correlationId) {
+        if (_ThrottlingUtils.checkResponseStatus(response) || _ThrottlingUtils.checkResponseForRetryAfter(response)) {
           const thumbprintValue = {
-            throttleTime: _ThrottlingUtils.calculateThrottleTime(parseInt(response2.headers[HeaderNames.RETRY_AFTER])),
-            error: response2.body.error,
-            errorCodes: response2.body.error_codes,
-            errorMessage: response2.body.error_description,
-            subError: response2.body.suberror
+            throttleTime: _ThrottlingUtils.calculateThrottleTime(parseInt(response.headers[HeaderNames.RETRY_AFTER])),
+            error: response.body.error,
+            errorCodes: response.body.error_codes,
+            errorMessage: response.body.error_description,
+            subError: response.body.suberror
           };
           cacheManager.setThrottlingCache(_ThrottlingUtils.generateThrottlingStorageKey(thumbprint), thumbprintValue, correlationId);
         }
@@ -25045,16 +25045,16 @@ Error Description: ${typedError.message}`);
        * Checks a NetworkResponse object's status codes against 429 or 5xx
        * @param response
        */
-      static checkResponseStatus(response2) {
-        return response2.status === 429 || response2.status >= 500 && response2.status < 600;
+      static checkResponseStatus(response) {
+        return response.status === 429 || response.status >= 500 && response.status < 600;
       }
       /**
        * Checks a NetworkResponse object's RetryAfter header
        * @param response
        */
-      static checkResponseForRetryAfter(response2) {
-        if (response2.headers) {
-          return response2.headers.hasOwnProperty(HeaderNames.RETRY_AFTER) && (response2.status < 200 || response2.status >= 300);
+      static checkResponseForRetryAfter(response) {
+        if (response.headers) {
+          return response.headers.hasOwnProperty(HeaderNames.RETRY_AFTER) && (response.status < 200 || response.status >= 300);
         }
         return false;
       }
@@ -25132,11 +25132,11 @@ Error Description: ${typedError.message}`);
         if (queuedEvent) {
           this.performanceClient?.addQueueMeasurement(queuedEvent, correlationId);
         }
-        const response2 = await this.sendPostRequest(thumbprint, tokenEndpoint, { body: queryString, headers }, correlationId);
-        if (this.config.serverTelemetryManager && response2.status < 500 && response2.status !== 429) {
+        const response = await this.sendPostRequest(thumbprint, tokenEndpoint, { body: queryString, headers }, correlationId);
+        if (this.config.serverTelemetryManager && response.status < 500 && response.status !== 429) {
           this.config.serverTelemetryManager.clearTelemetryCache();
         }
-        return response2;
+        return response;
       }
       /**
        * Wraps sendPostRequestAsync with necessary preflight and postflight logic
@@ -25147,12 +25147,12 @@ Error Description: ${typedError.message}`);
        */
       async sendPostRequest(thumbprint, tokenEndpoint, options, correlationId) {
         ThrottlingUtils.preProcess(this.cacheManager, thumbprint, correlationId);
-        let response2;
+        let response;
         try {
-          response2 = await invokeAsync(this.networkClient.sendPostRequestAsync.bind(this.networkClient), PerformanceEvents.NetworkClientSendPostRequestAsync, this.logger, this.performanceClient, correlationId)(tokenEndpoint, options);
-          const responseHeaders = response2.headers || {};
+          response = await invokeAsync(this.networkClient.sendPostRequestAsync.bind(this.networkClient), PerformanceEvents.NetworkClientSendPostRequestAsync, this.logger, this.performanceClient, correlationId)(tokenEndpoint, options);
+          const responseHeaders = response.headers || {};
           this.performanceClient?.addFields({
-            refreshTokenSize: response2.body.refresh_token?.length || 0,
+            refreshTokenSize: response.body.refresh_token?.length || 0,
             httpVerToken: responseHeaders[HeaderNames.X_MS_HTTP_VERSION] || "",
             requestId: responseHeaders[HeaderNames.X_MS_REQUEST_ID] || ""
           }, correlationId);
@@ -25176,8 +25176,8 @@ Error Description: ${typedError.message}`);
             throw createClientAuthError(networkError);
           }
         }
-        ThrottlingUtils.postProcess(this.cacheManager, thumbprint, response2, correlationId);
-        return response2;
+        ThrottlingUtils.postProcess(this.cacheManager, thumbprint, response, correlationId);
+        return response;
       }
       /**
        * Updates the authority object of the client. Endpoint discovery must be completed.
@@ -25869,11 +25869,11 @@ ${serverError}`);
           throw createClientAuthError(requestCannotBeMade);
         }
         const reqTimestamp = nowSeconds();
-        const response2 = await invokeAsync(this.executeTokenRequest.bind(this), PerformanceEvents.AuthClientExecuteTokenRequest, this.logger, this.performanceClient, request.correlationId)(this.authority, request);
-        const requestId = response2.headers?.[HeaderNames.X_MS_REQUEST_ID];
+        const response = await invokeAsync(this.executeTokenRequest.bind(this), PerformanceEvents.AuthClientExecuteTokenRequest, this.logger, this.performanceClient, request.correlationId)(this.authority, request);
+        const requestId = response.headers?.[HeaderNames.X_MS_REQUEST_ID];
         const responseHandler = new ResponseHandler(this.config.authOptions.clientId, this.cacheManager, this.cryptoUtils, this.logger, this.config.serializableCache, this.config.persistencePlugin, this.performanceClient);
-        responseHandler.validateTokenResponse(response2.body);
-        return invokeAsync(responseHandler.handleServerTokenResponse.bind(responseHandler), PerformanceEvents.HandleServerTokenResponse, this.logger, this.performanceClient, request.correlationId)(response2.body, this.authority, reqTimestamp, request, authCodePayload, void 0, void 0, void 0, requestId);
+        responseHandler.validateTokenResponse(response.body);
+        return invokeAsync(responseHandler.handleServerTokenResponse.bind(responseHandler), PerformanceEvents.HandleServerTokenResponse, this.logger, this.performanceClient, request.correlationId)(response.body, this.authority, reqTimestamp, request, authCodePayload, void 0, void 0, void 0, requestId);
       }
       /**
        * Used to log out the current user, and redirect the user to the postLogoutRedirectUri.
@@ -26050,11 +26050,11 @@ ${serverError}`);
       async acquireToken(request) {
         this.performanceClient?.addQueueMeasurement(PerformanceEvents.RefreshTokenClientAcquireToken, request.correlationId);
         const reqTimestamp = nowSeconds();
-        const response2 = await invokeAsync(this.executeTokenRequest.bind(this), PerformanceEvents.RefreshTokenClientExecuteTokenRequest, this.logger, this.performanceClient, request.correlationId)(request, this.authority);
-        const requestId = response2.headers?.[HeaderNames.X_MS_REQUEST_ID];
+        const response = await invokeAsync(this.executeTokenRequest.bind(this), PerformanceEvents.RefreshTokenClientExecuteTokenRequest, this.logger, this.performanceClient, request.correlationId)(request, this.authority);
+        const requestId = response.headers?.[HeaderNames.X_MS_REQUEST_ID];
         const responseHandler = new ResponseHandler(this.config.authOptions.clientId, this.cacheManager, this.cryptoUtils, this.logger, this.config.serializableCache, this.config.persistencePlugin);
-        responseHandler.validateTokenResponse(response2.body);
-        return invokeAsync(responseHandler.handleServerTokenResponse.bind(responseHandler), PerformanceEvents.HandleServerTokenResponse, this.logger, this.performanceClient, request.correlationId)(response2.body, this.authority, reqTimestamp, request, void 0, void 0, true, request.forceCache, requestId);
+        responseHandler.validateTokenResponse(response.body);
+        return invokeAsync(responseHandler.handleServerTokenResponse.bind(responseHandler), PerformanceEvents.HandleServerTokenResponse, this.logger, this.performanceClient, request.correlationId)(response.body, this.authority, reqTimestamp, request, void 0, void 0, true, request.forceCache, requestId);
       }
       /**
        * Gets cached refresh token and attaches to request, then calls acquireToken API
@@ -33046,8 +33046,8 @@ var require_msal_node = __commonJS({
        * Check if the hash of the URL string contains known properties
        * @deprecated This API will be removed in a future version
        */
-      static hashContainsKnownProperties(response2) {
-        return !!getDeserializedResponse(response2);
+      static hashContainsKnownProperties(response) {
+        return !!getDeserializedResponse(response);
       }
     };
     var rawMetdataJSON = {
@@ -33149,9 +33149,9 @@ var require_msal_node = __commonJS({
       const metadata = getCloudDiscoveryMetadataFromNetworkResponse(InstanceDiscoveryMetadata.metadata, authorityHost);
       return metadata;
     }
-    function getCloudDiscoveryMetadataFromNetworkResponse(response2, authorityHost) {
-      for (let i = 0; i < response2.length; i++) {
-        const metadata = response2[i];
+    function getCloudDiscoveryMetadataFromNetworkResponse(response, authorityHost) {
+      for (let i = 0; i < response.length; i++) {
+        const metadata = response[i];
         if (metadata.aliases.includes(authorityHost)) {
           return metadata;
         }
@@ -34861,14 +34861,14 @@ var require_msal_node = __commonJS({
       Dsts: 2,
       Ciam: 3
     };
-    function isOpenIdConfigResponse(response2) {
-      return response2.hasOwnProperty("authorization_endpoint") && response2.hasOwnProperty("token_endpoint") && response2.hasOwnProperty("issuer") && response2.hasOwnProperty("jwks_uri");
+    function isOpenIdConfigResponse(response) {
+      return response.hasOwnProperty("authorization_endpoint") && response.hasOwnProperty("token_endpoint") && response.hasOwnProperty("issuer") && response.hasOwnProperty("jwks_uri");
     }
-    function isCloudInstanceDiscoveryResponse(response2) {
-      return response2.hasOwnProperty("tenant_discovery_endpoint") && response2.hasOwnProperty("metadata");
+    function isCloudInstanceDiscoveryResponse(response) {
+      return response.hasOwnProperty("tenant_discovery_endpoint") && response.hasOwnProperty("metadata");
     }
-    function isCloudInstanceDiscoveryErrorResponse(response2) {
-      return response2.hasOwnProperty("error") && response2.hasOwnProperty("error_description");
+    function isCloudInstanceDiscoveryErrorResponse(response) {
+      return response.hasOwnProperty("error") && response.hasOwnProperty("error_description");
     }
     var invoke = (callback, eventName, logger, telemetryClient, correlationId) => {
       return (...args) => {
@@ -34908,12 +34908,12 @@ var require_msal_node = __commonJS({
           telemetryClient?.incrementFields({ [eventCount]: 1 }, correlationId);
         }
         telemetryClient?.setPreQueueTime(eventName, correlationId);
-        return callback(...args).then((response2) => {
+        return callback(...args).then((response) => {
           logger.trace(`Returning result from ${eventName}`);
           inProgressEvent?.end({
             success: true
           });
-          return response2;
+          return response;
         }).catch((e) => {
           logger.trace(`Error occurred in ${eventName}`);
           try {
@@ -34993,9 +34993,9 @@ var require_msal_node = __commonJS({
       async getCurrentVersion(options) {
         this.performanceClient?.addQueueMeasurement(PerformanceEvents.RegionDiscoveryGetCurrentVersion, this.correlationId);
         try {
-          const response2 = await this.networkInterface.sendGetRequestAsync(`${Constants$1.IMDS_ENDPOINT}?format=json`, options);
-          if (response2.status === HttpStatus.BAD_REQUEST && response2.body && response2.body["newest-versions"] && response2.body["newest-versions"].length > 0) {
-            return response2.body["newest-versions"][0];
+          const response = await this.networkInterface.sendGetRequestAsync(`${Constants$1.IMDS_ENDPOINT}?format=json`, options);
+          if (response.status === HttpStatus.BAD_REQUEST && response.body && response.body["newest-versions"] && response.body["newest-versions"].length > 0) {
+            return response.body["newest-versions"][0];
           }
           return null;
         } catch (e) {
@@ -35553,10 +35553,10 @@ var require_msal_node = __commonJS({
         const openIdConfigurationEndpoint = this.defaultOpenIdConfigurationEndpoint;
         this.logger.verbose(`Authority.getEndpointMetadataFromNetwork: attempting to retrieve OAuth endpoints from ${openIdConfigurationEndpoint}`);
         try {
-          const response2 = await this.networkInterface.sendGetRequestAsync(openIdConfigurationEndpoint, options);
-          const isValidResponse = isOpenIdConfigResponse(response2.body);
+          const response = await this.networkInterface.sendGetRequestAsync(openIdConfigurationEndpoint, options);
+          const isValidResponse = isOpenIdConfigResponse(response.body);
           if (isValidResponse) {
-            return response2.body;
+            return response.body;
           } else {
             this.logger.verbose(`Authority.getEndpointMetadataFromNetwork: could not parse response as OpenID configuration`);
             return null;
@@ -35692,16 +35692,16 @@ var require_msal_node = __commonJS({
         const options = {};
         let match = null;
         try {
-          const response2 = await this.networkInterface.sendGetRequestAsync(instanceDiscoveryEndpoint, options);
+          const response = await this.networkInterface.sendGetRequestAsync(instanceDiscoveryEndpoint, options);
           let typedResponseBody;
           let metadata;
-          if (isCloudInstanceDiscoveryResponse(response2.body)) {
-            typedResponseBody = response2.body;
+          if (isCloudInstanceDiscoveryResponse(response.body)) {
+            typedResponseBody = response.body;
             metadata = typedResponseBody.metadata;
             this.logger.verbosePii(`tenant_discovery_endpoint is: ${typedResponseBody.tenant_discovery_endpoint}`);
-          } else if (isCloudInstanceDiscoveryErrorResponse(response2.body)) {
-            this.logger.warning(`A CloudInstanceDiscoveryErrorResponse was returned. The cloud instance discovery network request's status code is: ${response2.status}`);
-            typedResponseBody = response2.body;
+          } else if (isCloudInstanceDiscoveryErrorResponse(response.body)) {
+            this.logger.warning(`A CloudInstanceDiscoveryErrorResponse was returned. The cloud instance discovery network request's status code is: ${response.status}`);
+            typedResponseBody = response.body;
             if (typedResponseBody.error === Constants$1.INVALID_INSTANCE) {
               this.logger.error("The CloudInstanceDiscoveryErrorResponse error is invalid_instance.");
               return null;
@@ -35965,14 +35965,14 @@ Error Description: ${typedError.message}`);
        * @param thumbprint
        * @param response
        */
-      static postProcess(cacheManager, thumbprint, response2, correlationId) {
-        if (_ThrottlingUtils.checkResponseStatus(response2) || _ThrottlingUtils.checkResponseForRetryAfter(response2)) {
+      static postProcess(cacheManager, thumbprint, response, correlationId) {
+        if (_ThrottlingUtils.checkResponseStatus(response) || _ThrottlingUtils.checkResponseForRetryAfter(response)) {
           const thumbprintValue = {
-            throttleTime: _ThrottlingUtils.calculateThrottleTime(parseInt(response2.headers[HeaderNames.RETRY_AFTER])),
-            error: response2.body.error,
-            errorCodes: response2.body.error_codes,
-            errorMessage: response2.body.error_description,
-            subError: response2.body.suberror
+            throttleTime: _ThrottlingUtils.calculateThrottleTime(parseInt(response.headers[HeaderNames.RETRY_AFTER])),
+            error: response.body.error,
+            errorCodes: response.body.error_codes,
+            errorMessage: response.body.error_description,
+            subError: response.body.suberror
           };
           cacheManager.setThrottlingCache(_ThrottlingUtils.generateThrottlingStorageKey(thumbprint), thumbprintValue, correlationId);
         }
@@ -35981,16 +35981,16 @@ Error Description: ${typedError.message}`);
        * Checks a NetworkResponse object's status codes against 429 or 5xx
        * @param response
        */
-      static checkResponseStatus(response2) {
-        return response2.status === 429 || response2.status >= 500 && response2.status < 600;
+      static checkResponseStatus(response) {
+        return response.status === 429 || response.status >= 500 && response.status < 600;
       }
       /**
        * Checks a NetworkResponse object's RetryAfter header
        * @param response
        */
-      static checkResponseForRetryAfter(response2) {
-        if (response2.headers) {
-          return response2.headers.hasOwnProperty(HeaderNames.RETRY_AFTER) && (response2.status < 200 || response2.status >= 300);
+      static checkResponseForRetryAfter(response) {
+        if (response.headers) {
+          return response.headers.hasOwnProperty(HeaderNames.RETRY_AFTER) && (response.status < 200 || response.status >= 300);
         }
         return false;
       }
@@ -36064,11 +36064,11 @@ Error Description: ${typedError.message}`);
         if (queuedEvent) {
           this.performanceClient?.addQueueMeasurement(queuedEvent, correlationId);
         }
-        const response2 = await this.sendPostRequest(thumbprint, tokenEndpoint, { body: queryString, headers }, correlationId);
-        if (this.config.serverTelemetryManager && response2.status < 500 && response2.status !== 429) {
+        const response = await this.sendPostRequest(thumbprint, tokenEndpoint, { body: queryString, headers }, correlationId);
+        if (this.config.serverTelemetryManager && response.status < 500 && response.status !== 429) {
           this.config.serverTelemetryManager.clearTelemetryCache();
         }
-        return response2;
+        return response;
       }
       /**
        * Wraps sendPostRequestAsync with necessary preflight and postflight logic
@@ -36079,12 +36079,12 @@ Error Description: ${typedError.message}`);
        */
       async sendPostRequest(thumbprint, tokenEndpoint, options, correlationId) {
         ThrottlingUtils.preProcess(this.cacheManager, thumbprint, correlationId);
-        let response2;
+        let response;
         try {
-          response2 = await invokeAsync(this.networkClient.sendPostRequestAsync.bind(this.networkClient), PerformanceEvents.NetworkClientSendPostRequestAsync, this.logger, this.performanceClient, correlationId)(tokenEndpoint, options);
-          const responseHeaders = response2.headers || {};
+          response = await invokeAsync(this.networkClient.sendPostRequestAsync.bind(this.networkClient), PerformanceEvents.NetworkClientSendPostRequestAsync, this.logger, this.performanceClient, correlationId)(tokenEndpoint, options);
+          const responseHeaders = response.headers || {};
           this.performanceClient?.addFields({
-            refreshTokenSize: response2.body.refresh_token?.length || 0,
+            refreshTokenSize: response.body.refresh_token?.length || 0,
             httpVerToken: responseHeaders[HeaderNames.X_MS_HTTP_VERSION] || "",
             requestId: responseHeaders[HeaderNames.X_MS_REQUEST_ID] || ""
           }, correlationId);
@@ -36108,8 +36108,8 @@ Error Description: ${typedError.message}`);
             throw createClientAuthError(networkError);
           }
         }
-        ThrottlingUtils.postProcess(this.cacheManager, thumbprint, response2, correlationId);
-        return response2;
+        ThrottlingUtils.postProcess(this.cacheManager, thumbprint, response, correlationId);
+        return response;
       }
       /**
        * Updates the authority object of the client. Endpoint discovery must be completed.
@@ -36797,11 +36797,11 @@ ${serverError}`);
           throw createClientAuthError(requestCannotBeMade);
         }
         const reqTimestamp = nowSeconds();
-        const response2 = await invokeAsync(this.executeTokenRequest.bind(this), PerformanceEvents.AuthClientExecuteTokenRequest, this.logger, this.performanceClient, request.correlationId)(this.authority, request);
-        const requestId = response2.headers?.[HeaderNames.X_MS_REQUEST_ID];
+        const response = await invokeAsync(this.executeTokenRequest.bind(this), PerformanceEvents.AuthClientExecuteTokenRequest, this.logger, this.performanceClient, request.correlationId)(this.authority, request);
+        const requestId = response.headers?.[HeaderNames.X_MS_REQUEST_ID];
         const responseHandler = new ResponseHandler(this.config.authOptions.clientId, this.cacheManager, this.cryptoUtils, this.logger, this.config.serializableCache, this.config.persistencePlugin, this.performanceClient);
-        responseHandler.validateTokenResponse(response2.body);
-        return invokeAsync(responseHandler.handleServerTokenResponse.bind(responseHandler), PerformanceEvents.HandleServerTokenResponse, this.logger, this.performanceClient, request.correlationId)(response2.body, this.authority, reqTimestamp, request, authCodePayload, void 0, void 0, void 0, requestId);
+        responseHandler.validateTokenResponse(response.body);
+        return invokeAsync(responseHandler.handleServerTokenResponse.bind(responseHandler), PerformanceEvents.HandleServerTokenResponse, this.logger, this.performanceClient, request.correlationId)(response.body, this.authority, reqTimestamp, request, authCodePayload, void 0, void 0, void 0, requestId);
       }
       /**
        * Used to log out the current user, and redirect the user to the postLogoutRedirectUri.
@@ -36978,11 +36978,11 @@ ${serverError}`);
       async acquireToken(request) {
         this.performanceClient?.addQueueMeasurement(PerformanceEvents.RefreshTokenClientAcquireToken, request.correlationId);
         const reqTimestamp = nowSeconds();
-        const response2 = await invokeAsync(this.executeTokenRequest.bind(this), PerformanceEvents.RefreshTokenClientExecuteTokenRequest, this.logger, this.performanceClient, request.correlationId)(request, this.authority);
-        const requestId = response2.headers?.[HeaderNames.X_MS_REQUEST_ID];
+        const response = await invokeAsync(this.executeTokenRequest.bind(this), PerformanceEvents.RefreshTokenClientExecuteTokenRequest, this.logger, this.performanceClient, request.correlationId)(request, this.authority);
+        const requestId = response.headers?.[HeaderNames.X_MS_REQUEST_ID];
         const responseHandler = new ResponseHandler(this.config.authOptions.clientId, this.cacheManager, this.cryptoUtils, this.logger, this.config.serializableCache, this.config.persistencePlugin);
-        responseHandler.validateTokenResponse(response2.body);
-        return invokeAsync(responseHandler.handleServerTokenResponse.bind(responseHandler), PerformanceEvents.HandleServerTokenResponse, this.logger, this.performanceClient, request.correlationId)(response2.body, this.authority, reqTimestamp, request, void 0, void 0, true, request.forceCache, requestId);
+        responseHandler.validateTokenResponse(response.body);
+        return invokeAsync(responseHandler.handleServerTokenResponse.bind(responseHandler), PerformanceEvents.HandleServerTokenResponse, this.logger, this.performanceClient, request.correlationId)(response.body, this.authority, reqTimestamp, request, void 0, void 0, true, request.forceCache, requestId);
       }
       /**
        * Gets cached refresh token and attaches to request, then calls acquireToken API
@@ -37888,12 +37888,12 @@ Connection: close\r
           });
         }
         request.end();
-        request.on("connect", (response2, socket) => {
-          const proxyStatusCode = response2?.statusCode || ProxyStatus.SERVER_ERROR;
+        request.on("connect", (response, socket) => {
+          const proxyStatusCode = response?.statusCode || ProxyStatus.SERVER_ERROR;
           if (proxyStatusCode < ProxyStatus.SUCCESS_RANGE_START || proxyStatusCode > ProxyStatus.SUCCESS_RANGE_END) {
             request.destroy();
             socket.destroy();
-            reject(new Error(`Error connecting to proxy. Http status code: ${response2.statusCode}. Http status message: ${response2?.statusMessage || "Unknown"}`));
+            reject(new Error(`Error connecting to proxy. Http status code: ${response.statusCode}. Http status message: ${response?.statusMessage || "Unknown"}`));
           }
           socket.write(outgoingRequestString);
           const data = [];
@@ -37982,15 +37982,15 @@ Connection: close\r
           });
         }
         request.end();
-        request.on("response", (response2) => {
-          const headers2 = response2.headers;
-          const statusCode = response2.statusCode;
-          const statusMessage = response2.statusMessage;
+        request.on("response", (response) => {
+          const headers2 = response.headers;
+          const statusCode = response.statusCode;
+          const statusMessage = response.statusMessage;
           const data = [];
-          response2.on("data", (chunk) => {
+          response.on("data", (chunk) => {
             data.push(chunk);
           });
-          response2.on("end", () => {
+          response.on("end", () => {
             const body2 = Buffer.concat([...data]).toString();
             const parsedHeaders = headers2;
             const networkResponse = NetworkUtils.getNetworkResponse(parsedHeaders, parseBody(statusCode, statusMessage, parsedHeaders, body2), statusCode);
@@ -39278,10 +39278,10 @@ Headers: ${JSON.stringify(headers)}`
       async acquireToken(request) {
         this.logger.info("in acquireToken call in username-password client");
         const reqTimestamp = nowSeconds();
-        const response2 = await this.executeTokenRequest(this.authority, request);
+        const response = await this.executeTokenRequest(this.authority, request);
         const responseHandler = new ResponseHandler(this.config.authOptions.clientId, this.cacheManager, this.cryptoUtils, this.logger, this.config.serializableCache, this.config.persistencePlugin);
-        responseHandler.validateTokenResponse(response2.body);
-        const tokenResponse = responseHandler.handleServerTokenResponse(response2.body, this.authority, reqTimestamp, request);
+        responseHandler.validateTokenResponse(response.body);
+        const tokenResponse = responseHandler.handleServerTokenResponse(response.body, this.authority, reqTimestamp, request);
         return tokenResponse;
       }
       /**
@@ -39789,10 +39789,10 @@ Headers: ${JSON.stringify(headers)}`
         const deviceCodeResponse = await this.getDeviceCode(request);
         request.deviceCodeCallback(deviceCodeResponse);
         const reqTimestamp = nowSeconds();
-        const response2 = await this.acquireTokenWithDeviceCode(request, deviceCodeResponse);
+        const response = await this.acquireTokenWithDeviceCode(request, deviceCodeResponse);
         const responseHandler = new ResponseHandler(this.config.authOptions.clientId, this.cacheManager, this.cryptoUtils, this.logger, this.config.serializableCache, this.config.persistencePlugin);
-        responseHandler.validateTokenResponse(response2);
-        return responseHandler.handleServerTokenResponse(response2, this.authority, reqTimestamp, request);
+        responseHandler.validateTokenResponse(response);
+        return responseHandler.handleServerTokenResponse(response, this.authority, reqTimestamp, request);
       }
       /**
        * Creates device code request and executes http GET
@@ -39912,18 +39912,18 @@ Headers: ${JSON.stringify(headers)}`
             shrClaims: request.shrClaims,
             sshKid: request.sshKid
           };
-          const response2 = await this.executePostToTokenEndpoint(endpoint, requestBody, headers, thumbprint, request.correlationId);
-          if (response2.body && response2.body.error) {
-            if (response2.body.error === Constants$1.AUTHORIZATION_PENDING) {
+          const response = await this.executePostToTokenEndpoint(endpoint, requestBody, headers, thumbprint, request.correlationId);
+          if (response.body && response.body.error) {
+            if (response.body.error === Constants$1.AUTHORIZATION_PENDING) {
               this.logger.info("Authorization pending. Continue polling.");
               await delay(pollingIntervalMilli);
             } else {
               this.logger.info("Unexpected error in polling from the server");
-              throw createAuthError(postRequestFailed, response2.body.error);
+              throw createAuthError(postRequestFailed, response.body.error);
             }
           } else {
             this.logger.verbose("Authorization completed successfully. Polling stopped.");
-            return response2.body;
+            return response.body;
           }
         }
         this.logger.error("Polling stopped for unknown reasons.");
@@ -40050,8 +40050,8 @@ Headers: ${JSON.stringify(headers)}`
         let authCodeResponse = {};
         let authCodeListenerError = null;
         try {
-          const authCodeListener = loopbackClient.listenForAuthCode(successTemplate, errorTemplate).then((response2) => {
-            authCodeResponse = response2;
+          const authCodeListener = loopbackClient.listenForAuthCode(successTemplate, errorTemplate).then((response) => {
+            authCodeResponse = response;
           }).catch((e) => {
             authCodeListenerError = e;
           });
@@ -40306,9 +40306,9 @@ Headers: ${JSON.stringify(headers)}`
           };
           this.logger.info("Sending token request to endpoint: " + authority.tokenEndpoint);
           reqTimestamp = nowSeconds();
-          const response2 = await this.executePostToTokenEndpoint(endpoint, requestBody, headers, thumbprint, request.correlationId);
-          serverTokenResponse = response2.body;
-          serverTokenResponse.status = response2.status;
+          const response = await this.executePostToTokenEndpoint(endpoint, requestBody, headers, thumbprint, request.correlationId);
+          serverTokenResponse = response.body;
+          serverTokenResponse.status = response.status;
         }
         const responseHandler = new ResponseHandler(this.config.authOptions.clientId, this.cacheManager, this.cryptoUtils, this.logger, this.config.serializableCache, this.config.persistencePlugin);
         responseHandler.validateTokenResponse(serverTokenResponse, refreshAccessToken);
@@ -40478,10 +40478,10 @@ Headers: ${JSON.stringify(headers)}`
           sshKid: request.sshKid
         };
         const reqTimestamp = nowSeconds();
-        const response2 = await this.executePostToTokenEndpoint(endpoint, requestBody, headers, thumbprint, request.correlationId);
+        const response = await this.executePostToTokenEndpoint(endpoint, requestBody, headers, thumbprint, request.correlationId);
         const responseHandler = new ResponseHandler(this.config.authOptions.clientId, this.cacheManager, this.cryptoUtils, this.logger, this.config.serializableCache, this.config.persistencePlugin);
-        responseHandler.validateTokenResponse(response2.body);
-        const tokenResponse = await responseHandler.handleServerTokenResponse(response2.body, this.authority, reqTimestamp, request, void 0, userAssertionHash);
+        responseHandler.validateTokenResponse(response.body);
+        const tokenResponse = await responseHandler.handleServerTokenResponse(response.body, this.authority, reqTimestamp, request, void 0, userAssertionHash);
         return tokenResponse;
       }
       /**
@@ -40689,16 +40689,16 @@ Headers: ${JSON.stringify(headers)}`
         }
       }
       async sendNetworkRequestAsync(httpMethod, url, options) {
-        let response2 = await this.sendNetworkRequestAsyncHelper(httpMethod, url, options);
+        let response = await this.sendNetworkRequestAsyncHelper(httpMethod, url, options);
         if ("isNewRequest" in this.retryPolicy) {
           this.retryPolicy.isNewRequest = true;
         }
         let currentRetry = 0;
-        while (await this.retryPolicy.pauseForRetry(response2.status, currentRetry, this.logger, response2.headers[HeaderNames.RETRY_AFTER])) {
-          response2 = await this.sendNetworkRequestAsyncHelper(httpMethod, url, options);
+        while (await this.retryPolicy.pauseForRetry(response.status, currentRetry, this.logger, response.headers[HeaderNames.RETRY_AFTER])) {
+          response = await this.sendNetworkRequestAsyncHelper(httpMethod, url, options);
           currentRetry++;
         }
-        return response2;
+        return response;
       }
       async sendGetRequestAsync(url, options) {
         return this.sendNetworkRequestAsync(HttpMethod.GET, url, options);
@@ -40722,35 +40722,35 @@ Headers: ${JSON.stringify(headers)}`
         this.cryptoProvider = cryptoProvider;
         this.disableInternalRetries = disableInternalRetries;
       }
-      async getServerTokenResponseAsync(response2, _networkClient, _networkRequest, _networkRequestOptions) {
-        return this.getServerTokenResponse(response2);
+      async getServerTokenResponseAsync(response, _networkClient, _networkRequest, _networkRequestOptions) {
+        return this.getServerTokenResponse(response);
       }
-      getServerTokenResponse(response2) {
+      getServerTokenResponse(response) {
         let refreshIn, expiresIn;
-        if (response2.body.expires_on) {
-          if (isIso8601(response2.body.expires_on)) {
-            response2.body.expires_on = new Date(response2.body.expires_on).getTime() / 1e3;
+        if (response.body.expires_on) {
+          if (isIso8601(response.body.expires_on)) {
+            response.body.expires_on = new Date(response.body.expires_on).getTime() / 1e3;
           }
-          expiresIn = response2.body.expires_on - nowSeconds();
+          expiresIn = response.body.expires_on - nowSeconds();
           if (expiresIn > 2 * 3600) {
             refreshIn = expiresIn / 2;
           }
         }
         const serverTokenResponse = {
-          status: response2.status,
+          status: response.status,
           // success
-          access_token: response2.body.access_token,
+          access_token: response.body.access_token,
           expires_in: expiresIn,
-          scope: response2.body.resource,
-          token_type: response2.body.token_type,
+          scope: response.body.resource,
+          token_type: response.body.token_type,
           refresh_in: refreshIn,
           // error
-          correlation_id: response2.body.correlation_id || response2.body.correlationId,
-          error: typeof response2.body.error === "string" ? response2.body.error : response2.body.error?.code,
-          error_description: response2.body.message || (typeof response2.body.error === "string" ? response2.body.error_description : response2.body.error?.message),
-          error_codes: response2.body.error_codes,
-          timestamp: response2.body.timestamp,
-          trace_id: response2.body.trace_id
+          correlation_id: response.body.correlation_id || response.body.correlationId,
+          error: typeof response.body.error === "string" ? response.body.error : response.body.error?.code,
+          error_description: response.body.message || (typeof response.body.error === "string" ? response.body.error_description : response.body.error?.message),
+          error_codes: response.body.error_codes,
+          timestamp: response.body.timestamp,
+          trace_id: response.body.trace_id
         };
         return serverTokenResponse;
       }
@@ -40773,12 +40773,12 @@ Headers: ${JSON.stringify(headers)}`
         }
         const networkClientHelper = this.disableInternalRetries ? this.networkClient : new HttpClientWithRetries(this.networkClient, networkRequest.retryPolicy, this.logger);
         const reqTimestamp = nowSeconds();
-        let response2;
+        let response;
         try {
           if (networkRequest.httpMethod === HttpMethod.POST) {
-            response2 = await networkClientHelper.sendPostRequestAsync(networkRequest.computeUri(), networkRequestOptions);
+            response = await networkClientHelper.sendPostRequestAsync(networkRequest.computeUri(), networkRequestOptions);
           } else {
-            response2 = await networkClientHelper.sendGetRequestAsync(networkRequest.computeUri(), networkRequestOptions);
+            response = await networkClientHelper.sendGetRequestAsync(networkRequest.computeUri(), networkRequestOptions);
           }
         } catch (error) {
           if (error instanceof AuthError) {
@@ -40788,7 +40788,7 @@ Headers: ${JSON.stringify(headers)}`
           }
         }
         const responseHandler = new ResponseHandler(managedIdentityId.id, this.nodeStorage, this.cryptoProvider, this.logger, null, null);
-        const serverTokenResponse = await this.getServerTokenResponseAsync(response2, networkClientHelper, networkRequest, networkRequestOptions);
+        const serverTokenResponse = await this.getServerTokenResponseAsync(response, networkClientHelper, networkRequest, networkRequestOptions);
         responseHandler.validateTokenResponse(serverTokenResponse, refreshAccessToken);
         return responseHandler.handleServerTokenResponse(serverTokenResponse, fakeAuthority, reqTimestamp, managedIdentityRequest);
       }
@@ -41609,7 +41609,7 @@ var require_FsnxApiClient = __commonJS({
         if (a_payload?.Content?.Body != null) {
           reqBody.body = JSON.stringify(a_payload.Content.Body);
         }
-        response = await fetch(
+        const response = await fetch(
           action.payload.RequestUri,
           {
             credentials: "include",
@@ -41618,7 +41618,7 @@ var require_FsnxApiClient = __commonJS({
             ...reqBody
           }
         );
-        responseBody = {};
+        const responseBody = {};
         if (response.body != null) {
           responseBody.body = await response.json();
         }
@@ -41646,7 +41646,7 @@ var require_FsnxApiClient = __commonJS({
           "fusionex-auth-rsa-sha": rsaSha,
           "fusionex-accountorganizationid": this.EventInput.client_payload.fusionex_accountorganizationid
         };
-        outputResponse = await fetch(
+        const outputResponse = await fetch(
           outUrl,
           {
             method: "POST",
