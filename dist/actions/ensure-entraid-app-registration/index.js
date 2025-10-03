@@ -41719,8 +41719,8 @@ async function executeAction(args) {
   await fsnxClient.OnStep("upsert-app-service-principal", async () => {
     const upsertResponse = await fsnxClient.ExecuteHttpAction("appreg-sp-upsertwithappid");
     const getResponse = await fsnxClient.ExecuteHttpAction("appreg-sp-get-by-appid-check");
-    const regex = /(^\{?[A-Z0-9]{8}-[A-Z0-9]{4}-[A-Z0-9]{4}-[A-Z0-9]{4}-[A-Z0-9]{12}\}?)$/i;
-    const oAuth2Action = fsnxClient.EventInput.actions["appreg-sp-get-OAuth2PermissionGrants"];
+    const regex = /([A-Z0-9]{8}-[A-Z0-9]{4}-[A-Z0-9]{4}-[A-Z0-9]{4}-[A-Z0-9]{12})/;
+    const oAuth2Action = fsnxClient.Actions["appreg-sp-get-OAuth2PermissionGrants"];
     let reqUri = oAuth2Action.payload.RequestUri.replace(regex, getResponse.body.id);
     oAuth2Action.payload.RequestUri = reqUri;
     core.info(`RequestUri: ${oAuth2Action.payload.RequestUri}`);
