@@ -3,6 +3,8 @@
 //const core = require('@actions/core');
 const msal = require('@azure/msal-node');
 const crypto = require('crypto');
+
+const core = require('@actions/core');
 //const { buffer } = require('stream/consumers');
 
 //const ScopeAuthMap = new Map();
@@ -41,11 +43,18 @@ class FsnxApiClient{
         return this.#currentStep ??= this.DispatchPayload.current_step;
     }
 
-    async OnStep(stepName, callback) {
+    async OnStep(stepName,  callback) {
+
         if (this.#currentStep == stepName)
         {
+            core.info(`OnStep: ${stepName}`);
             await callback();
         } 
+        else
+        {
+            core.info(`Skipping step: ${stepName}, current step is: ${this.#currentStep}`);
+        }
+
     }
 
     async GetAuthHeader (auth_scopes)

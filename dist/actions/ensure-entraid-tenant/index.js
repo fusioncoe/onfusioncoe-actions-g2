@@ -41545,6 +41545,7 @@ var require_FsnxApiClient = __commonJS({
   "src/lib/FsnxApiClient.js"(exports2, module2) {
     var msal = require_msal_node();
     var crypto4 = require("crypto");
+    var core2 = require_core();
     var FsnxApiClient2 = class {
       constructor({ authority, client_id, client_secret, tenant_id, cloud, output_private_key, event_path }) {
         this.authority = authority;
@@ -41574,7 +41575,10 @@ var require_FsnxApiClient = __commonJS({
       }
       async OnStep(stepName, callback) {
         if (this.#currentStep == stepName) {
+          core2.info(`OnStep: ${stepName}`);
           await callback();
+        } else {
+          core2.info(`Skipping step: ${stepName}, current step is: ${this.#currentStep}`);
         }
       }
       async GetAuthHeader(auth_scopes) {
@@ -41709,7 +41713,7 @@ async function executeAction(args) {
   core.info(JSON.stringify(fsnxClient.EventInput));
   await fsnxClient.OnStep("get-tenant-organization", async () => {
     const getOrgResponse = await fsnxClient.ExecuteHttpAction("get-organization");
-    const getSpResponse = await fsnxClient.ExecuteHttpAction("serviceprincipal-list-by-appid");
+    const getSpResponse = await fsnxClient.ExecuteHttpAction("get-serviceprincipals");
     const output = {
       organization: getOrgResponse.body,
       servicePrincipals: getSpResponse.body

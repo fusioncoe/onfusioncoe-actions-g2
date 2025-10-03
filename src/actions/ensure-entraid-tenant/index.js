@@ -47,7 +47,7 @@ async function executeAction (args)
         // Process Actions    
         const getOrgResponse = await fsnxClient.ExecuteHttpAction("get-organization");
 
-        const getSpResponse = await fsnxClient.ExecuteHttpAction("serviceprincipal-list-by-appid");
+        const getSpResponse = await fsnxClient.ExecuteHttpAction("get-serviceprincipals");
 
         const output = 
         {

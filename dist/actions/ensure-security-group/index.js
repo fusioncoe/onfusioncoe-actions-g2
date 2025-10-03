@@ -41545,6 +41545,7 @@ var require_FsnxApiClient = __commonJS({
   "src/lib/FsnxApiClient.js"(exports2, module2) {
     var msal = require_msal_node();
     var crypto4 = require("crypto");
+    var core2 = require_core();
     var FsnxApiClient2 = class {
       constructor({ authority, client_id, client_secret, tenant_id, cloud, output_private_key, event_path }) {
         this.authority = authority;
@@ -41574,7 +41575,10 @@ var require_FsnxApiClient = __commonJS({
       }
       async OnStep(stepName, callback) {
         if (this.#currentStep == stepName) {
+          core2.info(`OnStep: ${stepName}`);
           await callback();
+        } else {
+          core2.info(`Skipping step: ${stepName}, current step is: ${this.#currentStep}`);
         }
       }
       async GetAuthHeader(auth_scopes) {
