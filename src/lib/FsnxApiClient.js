@@ -5,124 +5,206 @@ const msal = require('@azure/msal-node');
 const crypto = require('crypto');
 //const { buffer } = require('stream/consumers');
 
-const ScopeAuthMap = new Map();
+//const ScopeAuthMap = new Map();
 
-async function GetAuthHeader (authority, client_id, client_secret, tenant_id, scope)
-{
 
-    const scopeKey = scope.join(" ");
+class FsnxApiClient{
+    constructor({authority, client_id, client_secret, tenant_id, cloud, output_private_key}) {
+        this.authority = authority;
+        this.client_id = client_id;
+        this.client_secret = client_secret;
+        this.tenant_id = tenant_id;
+        this.cloud = cloud;
+        this.output_private_key = output_private_key;
+    }
+
+    #ScopeAuthMap = new Map();
+
+    #eventInput;
+    get EventInput() {
+        return this.#eventInput ??= require(args.event_path);
+    }
+
+    #actions;
+    get Actions() {
+        return this.#actions ??= this.DispatchPayload.actions;
+    }
+
+    #dispatchPayload;
+    get DispatchPayload() {
+        return this.#dispatchPayload ??= this.EventInput.client_payload.dispatch_payload;
+    }
+
+    #currentStep;
+    get CurrentStep() {
+        return this.#currentStep ??= this.DispatchPayload.current_step;
+    }
+
+    async OnStep(stepName, callback) {
+        if (this.#currentStep == stepName)
+        {
+            await callback();
+        } 
+    }
+
+    async GetAuthHeader (auth_scopes)
+    {
+        const scopeKey = auth_scopes.join(" ");
+        
+        //console.log (`scopekey: ${scopeKey}`)
+
+        if (!this.#ScopeAuthMap.has(scopeKey)) 
+        {
+
+            //console.log (`ScopeAuthMap does not have scopekey: ${scopeKey}`)
+
+            const tenantAuthority = new URL(this.tenant_id, this.authority)
+
+                const msalConfig  = {
+                    auth: {
+                        clientId: this.client_id,
+                        authority: tenantAuthority.toString(),
+                        clientSecret: client_secret,
+                    },
+                };
+
+                const tokenRequest = {
+                    scopes: this.scope,
+                };
+
+                const cca = new msal.ConfidentialClientApplication(msalConfig);
+
+                const acquireTokenResult = await cca.acquireTokenByClientCredential(tokenRequest)
+
+                const bearerToken = `bearer ${acquireTokenResult.accessToken}`;
+
+            // console.log(bearerToken);
+
+                this.#ScopeAuthMap.set(scopeKey, bearerToken);                 
+        }
+        else
+        {
+            // console.log (`ScopeAuthMap already has scopekey: ${scopeKey}`)
+        }
+
+        return this.#ScopeAuthMap.get(scopeKey);
+
+    }
+
+    async ExecuteHttpAction (actionName)
+    {
+                const action = this.Actions.find(a => a.name === actionName);
+                if (!action) throw new Error(`Action not found: ${actionName}`);
+
+                let a_payload = action.payload;
+
+                let authHeader = await GetAuthHeader(action.auth_scopes);
+
+                //console.log(authHeader);
+                //console.log(action.type);
+
+                let auth = {Authorization: authHeader};
+
+                // if (payload.Content != null){
+                //     headers['Content-Type'] = "application/json"
+                // }
+
+                // payload.Headers.forEach(h => {
+                //     headers[h.Key] = h.Value
+                // });
+
+                
+                // let reqBody =
+                // {
+                //    method: a_payload.Method,
+                //    headers: {...a_payload?.Content?.Headers ?? {}, ...a_payload?.Headers ?? {}, ...auth},
+                //  };
+
+
+                
+                var reqBody = {}
+                if (a_payload?.Content?.Body != null){
+                    reqBody.body = JSON.stringify(a_payload.Content.Body);
+                }
+                
+                //console.log(reqBody);
+
+                response = await fetch(action.payload.RequestUri, 
+                {
+                    credentials: "include",
+                    method: a_payload.Method,
+                    headers: {...a_payload?.Content?.Headers ?? {}, ...a_payload?.Headers ?? {}, ...auth},
+                    ...reqBody
+                });
+
+                //console.log(response);
+
+                responseBody = {};
+                if (response.body != null)
+                {
+                    responseBody.body = await response.json();
+                    //console.log(responseJson);
+                }
+                
+                return {
+                            status: response.status,
+                            statusText: response.statusText,
+                            headers: response.headers,
+                            ok: response.ok,
+                            ...responseBody
+                        }
+
+    }
+
+    async  SubmitOutput (output)
+    {
+            const outUrl = this.EventInput.client_payload.dispatch_output_url;
+
+            const outputBodyObject =
+            {
+                dispatch_job_id: this.EventInput.client_payload.dispatch_job_id,
+                fusionex_accountorganizationid: this.EventInput.client_payload.fusionex_accountorganizationid,
+                output: {...output}
+            }
+
+            const outputBodyJson ={ body: JSON.stringify(outputBodyObject)}
+            const outputSha = await GenerateSHA(outputBodyJson.body);
+
+            //core.info(`encrypting data ${outputSha}`);
+
+            const rsaSha = await EncryptData(outputSha, this.output_private_key );
+
+            const outputReqHeaders = {"Content-Type": "application/json",
+                    "fusionex-output-sha": outputSha,
+                    "fusionex-auth-rsa-sha": rsaSha,
+                    "fusionex-accountorganizationid": this.EventInput.client_payload.fusionex_accountorganizationid }
+
+            //core.info (JSON.stringify(outputReqHeaders))
+
+            //core.info(`processing fetch: ${outUrl}`);        
+
+            outputResponse = await fetch(outUrl, 
+            {
+            method: "POST",
+            headers: { ...outputReqHeaders },
+            ...outputBodyJson
+            });
+
+            //core.info("processing fetch");          
+            //core.info(JSON.stringify(outputResponse))
+
+    }
+
     
-    //console.log (`scopekey: ${scopeKey}`)
-
-    if (!ScopeAuthMap.has(scopeKey)) 
-    {
-
-          //console.log (`ScopeAuthMap does not have scopekey: ${scopeKey}`)
-
-           const tenantAuthority = new URL(tenant_id, authority)
-
-            const msalConfig  = {
-                auth: {
-                    clientId: client_id,
-                    authority: tenantAuthority.toString(),
-                    clientSecret: client_secret,
-                },
-            };
-
-            const tokenRequest = {
-                scopes: scope,
-            };
-
-            const cca = new msal.ConfidentialClientApplication(msalConfig);
-
-            const acquireTokenResult = await cca.acquireTokenByClientCredential(tokenRequest)
-
-            const bearerToken = `bearer ${acquireTokenResult.accessToken}`;
-
-           // console.log(bearerToken);
-
-            ScopeAuthMap.set(scopeKey, bearerToken);                 
-
-    }
-    else
-    {
-        // console.log (`ScopeAuthMap already has scopekey: ${scopeKey}`)
-    }
-
-    return ScopeAuthMap.get(scopeKey);
-
-}
-
-async function ExecuteHttpAction (action, authority, client_id, client_secret, tenant_id)
-{
-
-            let a_payload = action.payload;
-
-            let authHeader = await GetAuthHeader(authority,client_id,client_secret,tenant_id, action.auth_scopes);
-
-            //console.log(authHeader);
-            //console.log(action.type);
-
-            let auth = {Authorization: authHeader};
-
-            // if (payload.Content != null){
-            //     headers['Content-Type'] = "application/json"
-            // }
-
-            // payload.Headers.forEach(h => {
-            //     headers[h.Key] = h.Value
-            // });
-
-            
-            // let reqBody =
-            // {
-            //    method: a_payload.Method,
-            //    headers: {...a_payload?.Content?.Headers ?? {}, ...a_payload?.Headers ?? {}, ...auth},
-            //  };
-
-
-             
-             var reqBody = {}
-             if (a_payload?.Content?.Body != null){
-                reqBody.body = JSON.stringify(a_payload.Content.Body);
-             }
-             
-             //console.log(reqBody);
-
-             response = await fetch(action.payload.RequestUri, 
-             {
-                credentials: "include",
-                method: a_payload.Method,
-                headers: {...a_payload?.Content?.Headers ?? {}, ...a_payload?.Headers ?? {}, ...auth},
-                ...reqBody
-             });
-
-             //console.log(response);
-
-             responseBody = {};
-             if (response.body != null)
-             {
-                responseBody.body = await response.json();
-                //console.log(responseJson);
-             }
-             
-             return {
-                        status: response.status,
-                        statusText: response.statusText,
-                        headers: response.headers,
-                        ok: response.ok,
-                        ...responseBody
-                    }
-
 }
 
 async function GenerateSHA(input) {
-  const encoder = new TextEncoder();
-  const data = encoder.encode(input);
-  const hashBuffer = await crypto.subtle.digest('SHA-256', data);
-  const hashArray = Array.from(new Uint8Array(hashBuffer));
-  const hashHex = hashArray.map(byte => byte.toString(16).padStart(2, '0')).join('');
-  return hashHex;
+    const encoder = new TextEncoder();
+    const data = encoder.encode(input);
+    const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+    const hashArray = Array.from(new Uint8Array(hashBuffer));
+    const hashHex = hashArray.map(byte => byte.toString(16).padStart(2, '0')).join('');
+    return hashHex;
 }
 
 async function EncryptData(input, pemKey) {
@@ -137,50 +219,11 @@ async function EncryptData(input, pemKey) {
     ).toString("base64");
 }
 
-async function SubmitOutput (output, client_payload, private_key)
-{
-        const outUrl = client_payload.dispatch_output_url;
 
-        const outputBodyObject =
-        {
-            dispatch_job_id: client_payload.dispatch_job_id,
-            fusionex_accountorganizationid: client_payload.fusionex_accountorganizationid,
-            output: {...output}
-        }
-
-        const outputBodyJson ={ body: JSON.stringify(outputBodyObject)}
-        const outputSha = await GenerateSHA(outputBodyJson.body);
-
-        //core.info(`encrypting data ${outputSha}`);
-
-        const rsaSha = await EncryptData(outputSha, private_key );
-
-        const outputReqHeaders = {"Content-Type": "application/json",
-                  "fusionex-output-sha": outputSha,
-                  "fusionex-auth-rsa-sha": rsaSha,
-                  "fusionex-accountorganizationid": client_payload.fusionex_accountorganizationid }
-
-        //core.info (JSON.stringify(outputReqHeaders))
-
-        //core.info(`processing fetch: ${outUrl}`);        
-
-        outputResponse = await fetch(outUrl, 
-        {
-        method: "POST",
-        headers: { ...outputReqHeaders },
-        ...outputBodyJson
-        });
-
-        //core.info("processing fetch");          
-        //core.info(JSON.stringify(outputResponse))
-
-}
 
 module.exports = 
 {
-  GetAuthHeader,
-  ExecuteHttpAction,
+  FsnxApiClient,
   GenerateSHA,
   EncryptData,
-  SubmitOutput
 }

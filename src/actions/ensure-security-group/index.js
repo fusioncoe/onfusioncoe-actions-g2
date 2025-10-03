@@ -8,7 +8,7 @@
 const core = require('@actions/core');
 
 
-const FsnxApiClient = require('../../lib/FsnxApiClient.js');
+const {FsnxApiClient} = require('../../lib/FsnxApiClient.js');
 //const { json } = require('stream/consumers');
 
 //const msal = require('@azure/msal-node');
@@ -52,28 +52,14 @@ async function executeAction (args)
 {
     core.info("currently running ensure-security-group test");
 
-    // core.info(JSON.stringify(args))
+    const fsnxClient = new FsnxApiClient(args);
 
-    //const json = convert.xml2json(xml, { compact: true, spaces: 4 });
+    core.info(JSON.stringify(fsnxClient.EventInput));
 
-    // core.info(`Event info path is ${args.event_path}`);    
-
-    const eventInput = require(args.event_path);
-
-    core.info(JSON.stringify(eventInput));
-
-    // core.info("Event input has been collected");    
-
-    const actions = eventInput.client_payload.dispatch_payload.actions;
-
-    // process action 1, upsert
-
-    // core.info("Processing Actions");      
-
-    const upsertSecGrpAction = actions["group-patch-upsert"];
+    const upsertSecGrpAction = fsnxClient.Actions["group-patch-upsert"];
 
     core.info(`Adding or updating security group "${upsertSecGrpAction.payload.Content.Body.displayName}"`)
-    const upsertresponse = await FsnxApiClient.ExecuteHttpAction(upsertSecGrpAction, args.authority,args.client_id,args.client_secret,args.tenant_id)
+    const upsertresponse = await fsnxClient.ExecuteHttpAction("group-patch-upsert");
 
     if (upsertresponse.ok) 
     {
@@ -86,9 +72,7 @@ async function executeAction (args)
 
             core.info("Security group already exists.  Retrieving Object Id");
 
-            const getSecGrpAction = actions["group-get-by-uniquename-check"];
-    
-            const getResponse = await FsnxApiClient.ExecuteHttpAction(getSecGrpAction, args.authority,args.client_id,args.client_secret,args.tenant_id);
+            const getResponse = await fsnxClient.ExecuteHttpAction("group-get-by-uniquename-check");
 
             if (getResponse.ok) {
                 secObj = getResponse.body;
@@ -105,7 +89,7 @@ async function executeAction (args)
 
         // Test Output Functionality
 
-        FsnxApiClient.SubmitOutput (secObj, eventInput.client_payload, args.output_private_key)
+        fsnxClient.SubmitOutput (secObj)
 
     }
     else

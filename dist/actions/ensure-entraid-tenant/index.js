@@ -511,13 +511,13 @@ var require_tunnel = __commonJS({
     var debug;
     if (process.env.NODE_DEBUG && /\btunnel\b/.test(process.env.NODE_DEBUG)) {
       debug = function() {
-        var args = Array.prototype.slice.call(arguments);
-        if (typeof args[0] === "string") {
-          args[0] = "TUNNEL: " + args[0];
+        var args2 = Array.prototype.slice.call(arguments);
+        if (typeof args2[0] === "string") {
+          args2[0] = "TUNNEL: " + args2[0];
         } else {
-          args.unshift("TUNNEL:");
+          args2.unshift("TUNNEL:");
         }
-        console.error.apply(console, args);
+        console.error.apply(console, args2);
       };
     } else {
       debug = function() {
@@ -4973,21 +4973,21 @@ var require_file = __commonJS({
           lastModified: d
         };
       }
-      stream(...args) {
+      stream(...args2) {
         webidl.brandCheck(this, _FileLike);
-        return this[kState].blobLike.stream(...args);
+        return this[kState].blobLike.stream(...args2);
       }
-      arrayBuffer(...args) {
+      arrayBuffer(...args2) {
         webidl.brandCheck(this, _FileLike);
-        return this[kState].blobLike.arrayBuffer(...args);
+        return this[kState].blobLike.arrayBuffer(...args2);
       }
-      slice(...args) {
+      slice(...args2) {
         webidl.brandCheck(this, _FileLike);
-        return this[kState].blobLike.slice(...args);
+        return this[kState].blobLike.slice(...args2);
       }
-      text(...args) {
+      text(...args2) {
         webidl.brandCheck(this, _FileLike);
-        return this[kState].blobLike.text(...args);
+        return this[kState].blobLike.text(...args2);
       }
       get size() {
         webidl.brandCheck(this, _FileLike);
@@ -8975,8 +8975,8 @@ var require_balanced_pool = __commonJS({
           pool[kWeight] = Math.max(1, pool[kWeight] - this[kErrorPenalty]);
           this._updateBalancedPoolStats();
         });
-        pool.on("disconnect", (...args) => {
-          const err = args[2];
+        pool.on("disconnect", (...args2) => {
+          const err = args2[2];
           if (err && err.code === "UND_ERR_SOCKET") {
             pool[kWeight] = Math.max(1, pool[kWeight] - this[kErrorPenalty]);
             this._updateBalancedPoolStats();
@@ -9250,32 +9250,32 @@ var require_readable = __commonJS({
         }
         return super.destroy(err);
       }
-      emit(ev, ...args) {
+      emit(ev, ...args2) {
         if (ev === "data") {
           this._readableState.dataEmitted = true;
         } else if (ev === "error") {
           this._readableState.errorEmitted = true;
         }
-        return super.emit(ev, ...args);
+        return super.emit(ev, ...args2);
       }
-      on(ev, ...args) {
+      on(ev, ...args2) {
         if (ev === "data" || ev === "readable") {
           this[kReading] = true;
         }
-        return super.on(ev, ...args);
+        return super.on(ev, ...args2);
       }
-      addListener(ev, ...args) {
-        return this.on(ev, ...args);
+      addListener(ev, ...args2) {
+        return this.on(ev, ...args2);
       }
-      off(ev, ...args) {
-        const ret = super.off(ev, ...args);
+      off(ev, ...args2) {
+        const ret = super.off(ev, ...args2);
         if (ev === "data" || ev === "readable") {
           this[kReading] = this.listenerCount("data") > 0 || this.listenerCount("readable") > 0;
         }
         return ret;
       }
-      removeListener(ev, ...args) {
-        return this.off(ev, ...args);
+      removeListener(ev, ...args2) {
+        return this.off(ev, ...args2);
       }
       push(chunk) {
         if (this[kConsume] && chunk !== null && this.readableLength === 0) {
@@ -11522,26 +11522,26 @@ var require_DecoratorHandler = __commonJS({
       constructor(handler) {
         this.handler = handler;
       }
-      onConnect(...args) {
-        return this.handler.onConnect(...args);
+      onConnect(...args2) {
+        return this.handler.onConnect(...args2);
       }
-      onError(...args) {
-        return this.handler.onError(...args);
+      onError(...args2) {
+        return this.handler.onError(...args2);
       }
-      onUpgrade(...args) {
-        return this.handler.onUpgrade(...args);
+      onUpgrade(...args2) {
+        return this.handler.onUpgrade(...args2);
       }
-      onHeaders(...args) {
-        return this.handler.onHeaders(...args);
+      onHeaders(...args2) {
+        return this.handler.onHeaders(...args2);
       }
-      onData(...args) {
-        return this.handler.onData(...args);
+      onData(...args2) {
+        return this.handler.onData(...args2);
       }
-      onComplete(...args) {
-        return this.handler.onComplete(...args);
+      onComplete(...args2) {
+        return this.handler.onComplete(...args2);
       }
-      onBodySent(...args) {
-        return this.handler.onBodySent(...args);
+      onBodySent(...args2) {
+        return this.handler.onBodySent(...args2);
       }
     };
   }
@@ -18941,13 +18941,13 @@ var require_toolrunner = __commonJS({
     var timers_1 = require("timers");
     var IS_WINDOWS = process.platform === "win32";
     var ToolRunner = class extends events.EventEmitter {
-      constructor(toolPath, args, options) {
+      constructor(toolPath, args2, options) {
         super();
         if (!toolPath) {
           throw new Error("Parameter 'toolPath' cannot be null or empty.");
         }
         this.toolPath = toolPath;
-        this.args = args || [];
+        this.args = args2 || [];
         this.options = options || {};
       }
       _debug(message) {
@@ -18957,28 +18957,28 @@ var require_toolrunner = __commonJS({
       }
       _getCommandString(options, noPrefix) {
         const toolPath = this._getSpawnFileName();
-        const args = this._getSpawnArgs(options);
+        const args2 = this._getSpawnArgs(options);
         let cmd = noPrefix ? "" : "[command]";
         if (IS_WINDOWS) {
           if (this._isCmdFile()) {
             cmd += toolPath;
-            for (const a of args) {
+            for (const a of args2) {
               cmd += ` ${a}`;
             }
           } else if (options.windowsVerbatimArguments) {
             cmd += `"${toolPath}"`;
-            for (const a of args) {
+            for (const a of args2) {
               cmd += ` ${a}`;
             }
           } else {
             cmd += this._windowsQuoteCmdArg(toolPath);
-            for (const a of args) {
+            for (const a of args2) {
               cmd += ` ${this._windowsQuoteCmdArg(a)}`;
             }
           }
         } else {
           cmd += toolPath;
-          for (const a of args) {
+          for (const a of args2) {
             cmd += ` ${a}`;
           }
         }
@@ -19251,7 +19251,7 @@ var require_toolrunner = __commonJS({
     };
     exports2.ToolRunner = ToolRunner;
     function argStringToArray(argString) {
-      const args = [];
+      const args2 = [];
       let inQuotes = false;
       let escaped = false;
       let arg = "";
@@ -19282,7 +19282,7 @@ var require_toolrunner = __commonJS({
         }
         if (c === " " && !inQuotes) {
           if (arg.length > 0) {
-            args.push(arg);
+            args2.push(arg);
             arg = "";
           }
           continue;
@@ -19290,9 +19290,9 @@ var require_toolrunner = __commonJS({
         append(c);
       }
       if (arg.length > 0) {
-        args.push(arg.trim());
+        args2.push(arg.trim());
       }
-      return args;
+      return args2;
     }
     exports2.argStringToArray = argStringToArray;
     var ExecState = class _ExecState extends events.EventEmitter {
@@ -19418,20 +19418,20 @@ var require_exec = __commonJS({
     exports2.getExecOutput = exports2.exec = void 0;
     var string_decoder_1 = require("string_decoder");
     var tr = __importStar(require_toolrunner());
-    function exec(commandLine, args, options) {
+    function exec(commandLine, args2, options) {
       return __awaiter(this, void 0, void 0, function* () {
         const commandArgs = tr.argStringToArray(commandLine);
         if (commandArgs.length === 0) {
           throw new Error(`Parameter 'commandLine' cannot be null or empty.`);
         }
         const toolPath = commandArgs[0];
-        args = commandArgs.slice(1).concat(args || []);
-        const runner = new tr.ToolRunner(toolPath, args, options);
+        args2 = commandArgs.slice(1).concat(args2 || []);
+        const runner = new tr.ToolRunner(toolPath, args2, options);
         return runner.exec();
       });
     }
     exports2.exec = exec;
-    function getExecOutput(commandLine, args, options) {
+    function getExecOutput(commandLine, args2, options) {
       var _a, _b;
       return __awaiter(this, void 0, void 0, function* () {
         let stdout = "";
@@ -19453,7 +19453,7 @@ var require_exec = __commonJS({
           }
         };
         const listeners = Object.assign(Object.assign({}, options === null || options === void 0 ? void 0 : options.listeners), { stdout: stdOutListener, stderr: stdErrListener });
-        const exitCode = yield exec(commandLine, args, Object.assign(Object.assign({}, options), { listeners }));
+        const exitCode = yield exec(commandLine, args2, Object.assign(Object.assign({}, options), { listeners }));
         stdout += stdoutDecoder.end();
         stderr += stderrDecoder.end();
         return {
@@ -21909,7 +21909,7 @@ var require_index_node_C8h2xZEM = __commonJS({
       "upgradedCacheCount"
     ]);
     var invoke = (callback, eventName, logger, telemetryClient, correlationId) => {
-      return (...args) => {
+      return (...args2) => {
         logger.trace(`Executing function ${eventName}`);
         const inProgressEvent = telemetryClient?.startMeasurement(eventName, correlationId);
         if (correlationId) {
@@ -21917,7 +21917,7 @@ var require_index_node_C8h2xZEM = __commonJS({
           telemetryClient?.incrementFields({ [eventCount]: 1 }, correlationId);
         }
         try {
-          const result = callback(...args);
+          const result = callback(...args2);
           inProgressEvent?.end({
             success: true
           });
@@ -21938,7 +21938,7 @@ var require_index_node_C8h2xZEM = __commonJS({
       };
     };
     var invokeAsync = (callback, eventName, logger, telemetryClient, correlationId) => {
-      return (...args) => {
+      return (...args2) => {
         logger.trace(`Executing function ${eventName}`);
         const inProgressEvent = telemetryClient?.startMeasurement(eventName, correlationId);
         if (correlationId) {
@@ -21946,7 +21946,7 @@ var require_index_node_C8h2xZEM = __commonJS({
           telemetryClient?.incrementFields({ [eventCount]: 1 }, correlationId);
         }
         telemetryClient?.setPreQueueTime(eventName, correlationId);
-        return callback(...args).then((response2) => {
+        return callback(...args2).then((response2) => {
           logger.trace(`Returning result from ${eventName}`);
           inProgressEvent?.end({
             success: true
@@ -28010,8 +28010,8 @@ var require_jwa = __commonJS({
       return base64url.replace(/\-/g, "+").replace(/_/g, "/");
     }
     function typeError(template) {
-      var args = [].slice.call(arguments, 1);
-      var errMsg = util.format.bind(util, template).apply(null, args);
+      var args2 = [].slice.call(arguments, 1);
+      var errMsg = util.format.bind(util, template).apply(null, args2);
       return new TypeError(errMsg);
     }
     function bufferOrString(obj) {
@@ -28629,7 +28629,7 @@ var require_constants6 = __commonJS({
 var require_debug = __commonJS({
   "node_modules/semver/internal/debug.js"(exports2, module2) {
     "use strict";
-    var debug = typeof process === "object" && process.env && process.env.NODE_DEBUG && /\bsemver\b/i.test(process.env.NODE_DEBUG) ? (...args) => console.error("SEMVER", ...args) : () => {
+    var debug = typeof process === "object" && process.env && process.env.NODE_DEBUG && /\bsemver\b/i.test(process.env.NODE_DEBUG) ? (...args2) => console.error("SEMVER", ...args2) : () => {
     };
     module2.exports = debug;
   }
@@ -34871,7 +34871,7 @@ var require_msal_node = __commonJS({
       return response2.hasOwnProperty("error") && response2.hasOwnProperty("error_description");
     }
     var invoke = (callback, eventName, logger, telemetryClient, correlationId) => {
-      return (...args) => {
+      return (...args2) => {
         logger.trace(`Executing function ${eventName}`);
         const inProgressEvent = telemetryClient?.startMeasurement(eventName, correlationId);
         if (correlationId) {
@@ -34879,7 +34879,7 @@ var require_msal_node = __commonJS({
           telemetryClient?.incrementFields({ [eventCount]: 1 }, correlationId);
         }
         try {
-          const result = callback(...args);
+          const result = callback(...args2);
           inProgressEvent?.end({
             success: true
           });
@@ -34900,7 +34900,7 @@ var require_msal_node = __commonJS({
       };
     };
     var invokeAsync = (callback, eventName, logger, telemetryClient, correlationId) => {
-      return (...args) => {
+      return (...args2) => {
         logger.trace(`Executing function ${eventName}`);
         const inProgressEvent = telemetryClient?.startMeasurement(eventName, correlationId);
         if (correlationId) {
@@ -34908,7 +34908,7 @@ var require_msal_node = __commonJS({
           telemetryClient?.incrementFields({ [eventCount]: 1 }, correlationId);
         }
         telemetryClient?.setPreQueueTime(eventName, correlationId);
-        return callback(...args).then((response2) => {
+        return callback(...args2).then((response2) => {
           logger.trace(`Returning result from ${eventName}`);
           inProgressEvent?.end({
             success: true
@@ -41545,58 +41545,116 @@ var require_FsnxApiClient = __commonJS({
   "src/lib/FsnxApiClient.js"(exports2, module2) {
     var msal = require_msal_node();
     var crypto4 = require("crypto");
-    var ScopeAuthMap = /* @__PURE__ */ new Map();
-    async function GetAuthHeader(authority, client_id, client_secret, tenant_id, scope) {
-      const scopeKey = scope.join(" ");
-      if (!ScopeAuthMap.has(scopeKey)) {
-        const tenantAuthority = new URL(tenant_id, authority);
-        const msalConfig = {
-          auth: {
-            clientId: client_id,
-            authority: tenantAuthority.toString(),
-            clientSecret: client_secret
-          }
-        };
-        const tokenRequest = {
-          scopes: scope
-        };
-        const cca = new msal.ConfidentialClientApplication(msalConfig);
-        const acquireTokenResult = await cca.acquireTokenByClientCredential(tokenRequest);
-        const bearerToken = `bearer ${acquireTokenResult.accessToken}`;
-        ScopeAuthMap.set(scopeKey, bearerToken);
-      } else {
+    var FsnxApiClient2 = class {
+      constructor({ authority, client_id, client_secret: client_secret2, tenant_id, cloud, output_private_key }) {
+        this.authority = authority;
+        this.client_id = client_id;
+        this.client_secret = client_secret2;
+        this.tenant_id = tenant_id;
+        this.cloud = cloud;
+        this.output_private_key = output_private_key;
       }
-      return ScopeAuthMap.get(scopeKey);
-    }
-    async function ExecuteHttpAction(action, authority, client_id, client_secret, tenant_id) {
-      let a_payload = action.payload;
-      let authHeader = await GetAuthHeader(authority, client_id, client_secret, tenant_id, action.auth_scopes);
-      let auth = { Authorization: authHeader };
-      var reqBody = {};
-      if (a_payload?.Content?.Body != null) {
-        reqBody.body = JSON.stringify(a_payload.Content.Body);
+      #ScopeAuthMap = /* @__PURE__ */ new Map();
+      #eventInput;
+      get EventInput() {
+        return this.#eventInput ??= require(args.event_path);
       }
-      response = await fetch(
-        action.payload.RequestUri,
-        {
-          credentials: "include",
-          method: a_payload.Method,
-          headers: { ...a_payload?.Content?.Headers ?? {}, ...a_payload?.Headers ?? {}, ...auth },
-          ...reqBody
+      #actions;
+      get Actions() {
+        return this.#actions ??= this.DispatchPayload.actions;
+      }
+      #dispatchPayload;
+      get DispatchPayload() {
+        return this.#dispatchPayload ??= this.EventInput.client_payload.dispatch_payload;
+      }
+      #currentStep;
+      get CurrentStep() {
+        return this.#currentStep ??= this.DispatchPayload.current_step;
+      }
+      async OnStep(stepName, callback) {
+        if (this.#currentStep == stepName) {
+          await callback();
         }
-      );
-      responseBody = {};
-      if (response.body != null) {
-        responseBody.body = await response.json();
       }
-      return {
-        status: response.status,
-        statusText: response.statusText,
-        headers: response.headers,
-        ok: response.ok,
-        ...responseBody
-      };
-    }
+      async GetAuthHeader(auth_scopes) {
+        const scopeKey = auth_scopes.join(" ");
+        if (!this.#ScopeAuthMap.has(scopeKey)) {
+          const tenantAuthority = new URL(this.tenant_id, this.authority);
+          const msalConfig = {
+            auth: {
+              clientId: this.client_id,
+              authority: tenantAuthority.toString(),
+              clientSecret: client_secret
+            }
+          };
+          const tokenRequest = {
+            scopes: this.scope
+          };
+          const cca = new msal.ConfidentialClientApplication(msalConfig);
+          const acquireTokenResult = await cca.acquireTokenByClientCredential(tokenRequest);
+          const bearerToken = `bearer ${acquireTokenResult.accessToken}`;
+          this.#ScopeAuthMap.set(scopeKey, bearerToken);
+        } else {
+        }
+        return this.#ScopeAuthMap.get(scopeKey);
+      }
+      async ExecuteHttpAction(actionName) {
+        const action = this.Actions.find((a) => a.name === actionName);
+        if (!action) throw new Error(`Action not found: ${actionName}`);
+        let a_payload = action.payload;
+        let authHeader = await GetAuthHeader(action.auth_scopes);
+        let auth = { Authorization: authHeader };
+        var reqBody = {};
+        if (a_payload?.Content?.Body != null) {
+          reqBody.body = JSON.stringify(a_payload.Content.Body);
+        }
+        response = await fetch(
+          action.payload.RequestUri,
+          {
+            credentials: "include",
+            method: a_payload.Method,
+            headers: { ...a_payload?.Content?.Headers ?? {}, ...a_payload?.Headers ?? {}, ...auth },
+            ...reqBody
+          }
+        );
+        responseBody = {};
+        if (response.body != null) {
+          responseBody.body = await response.json();
+        }
+        return {
+          status: response.status,
+          statusText: response.statusText,
+          headers: response.headers,
+          ok: response.ok,
+          ...responseBody
+        };
+      }
+      async SubmitOutput(output) {
+        const outUrl = this.EventInput.client_payload.dispatch_output_url;
+        const outputBodyObject = {
+          dispatch_job_id: this.EventInput.client_payload.dispatch_job_id,
+          fusionex_accountorganizationid: this.EventInput.client_payload.fusionex_accountorganizationid,
+          output: { ...output }
+        };
+        const outputBodyJson = { body: JSON.stringify(outputBodyObject) };
+        const outputSha = await GenerateSHA(outputBodyJson.body);
+        const rsaSha = await EncryptData(outputSha, this.output_private_key);
+        const outputReqHeaders = {
+          "Content-Type": "application/json",
+          "fusionex-output-sha": outputSha,
+          "fusionex-auth-rsa-sha": rsaSha,
+          "fusionex-accountorganizationid": this.EventInput.client_payload.fusionex_accountorganizationid
+        };
+        outputResponse = await fetch(
+          outUrl,
+          {
+            method: "POST",
+            headers: { ...outputReqHeaders },
+            ...outputBodyJson
+          }
+        );
+      }
+    };
     async function GenerateSHA(input) {
       const encoder = new TextEncoder();
       const data = encoder.encode(input);
@@ -41616,52 +41674,20 @@ var require_FsnxApiClient = __commonJS({
         Buffer.from(input)
       ).toString("base64");
     }
-    async function SubmitOutput(output, client_payload, private_key) {
-      const outUrl = client_payload.dispatch_output_url;
-      const outputBodyObject = {
-        dispatch_job_id: client_payload.dispatch_job_id,
-        fusionex_accountorganizationid: client_payload.fusionex_accountorganizationid,
-        output: { ...output }
-      };
-      const outputBodyJson = { body: JSON.stringify(outputBodyObject) };
-      const outputSha = await GenerateSHA(outputBodyJson.body);
-      const rsaSha = await EncryptData(outputSha, private_key);
-      const outputReqHeaders = {
-        "Content-Type": "application/json",
-        "fusionex-output-sha": outputSha,
-        "fusionex-auth-rsa-sha": rsaSha,
-        "fusionex-accountorganizationid": client_payload.fusionex_accountorganizationid
-      };
-      outputResponse = await fetch(
-        outUrl,
-        {
-          method: "POST",
-          headers: { ...outputReqHeaders },
-          ...outputBodyJson
-        }
-      );
-    }
     module2.exports = {
-      GetAuthHeader,
-      ExecuteHttpAction,
+      FsnxApiClient: FsnxApiClient2,
       GenerateSHA,
-      EncryptData,
-      SubmitOutput
+      EncryptData
     };
   }
 });
 
 // src/actions/ensure-entraid-tenant/index.js
-var index_exports = {};
-__export(index_exports, {
-  default: () => executeAction
-});
-module.exports = __toCommonJS(index_exports);
 var core = require_core();
-var FsnxApiClient = require_FsnxApiClient();
+var { FsnxApiClient } = require_FsnxApiClient();
 (async () => {
   core.startGroup("ensure-entraid-tenant");
-  const args = {
+  const args2 = {
     authority: core.getInput("authority"),
     tenant_id: core.getInput("tenant_id"),
     client_secret: core.getInput("client_secret"),
@@ -41670,27 +41696,29 @@ var FsnxApiClient = require_FsnxApiClient();
     output_private_key: core.getInput("output_private_key"),
     event_path: core.getInput("event_path")
   };
-  await executeAction(args);
+  await executeAction(args2);
   core.endGroup();
 })().catch((error) => {
   core.endGroup();
   core.setFailed(error.message);
 });
-async function executeAction(args) {
+async function executeAction(args2) {
   core.info("currently running ensure-entraid-tenant");
-  const eventInput = require(args.event_path);
-  core.info(JSON.stringify(eventInput));
-  const actions = eventInput.client_payload.dispatch_payload.actions;
-  const getOrgAction = actions["get-organization"];
-  const getOrgResponse = await FsnxApiClient.ExecuteHttpAction(getOrgAction, args.authority, args.client_id, args.client_secret, args.tenant_id);
-  const getSpAction = actions["get-serviceprincipals"];
-  const getSpResponse = await FsnxApiClient.ExecuteHttpAction(getSpAction, args.authority, args.client_id, args.client_secret, args.tenant_id);
-  var output = {
-    organization: getOrgResponse.body,
-    servicePrincipals: getSpResponse.body
-  };
-  FsnxApiClient.SubmitOutput(output, eventInput.client_payload, args.output_private_key);
+  const fsnxClient = new FsnxApiClient(args2);
+  core.info(JSON.stringify(fsnxClient.EventInput));
+  await fsnxClient.OnStep("get-tenant-organization", async () => {
+    const getOrgResponse = await fsnxClient.ExecuteHttpAction("get-organization");
+    const getSpResponse = await fsnxClient.ExecuteHttpAction("serviceprincipal-list-by-appid");
+    const output = {
+      organization: getOrgResponse.body,
+      servicePrincipals: getSpResponse.body
+    };
+    fsnxClient.SubmitOutput(output);
+  });
 }
+module.exports = {
+  executeAction
+};
 /*! Bundled license information:
 
 undici/lib/fetch/body.js:

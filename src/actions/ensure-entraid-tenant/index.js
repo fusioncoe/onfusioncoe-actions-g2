@@ -2,7 +2,7 @@
 
 
 const core = require('@actions/core');
-const FsnxApiClient = require('../../lib/FsnxApiClient.js');
+const {FsnxApiClient} = require('../../lib/FsnxApiClient.js');
 
 //const msal = require('@azure/msal-node');
 
@@ -32,35 +32,37 @@ catch (error => {
     core.setFailed(error.message);
 });
 
-export default async function executeAction (args)
+async function executeAction (args)
 {
 
     core.info("currently running ensure-entraid-tenant");
 
-    const eventInput = require(args.event_path);
+    const fsnxClient = new FsnxApiClient(args);
 
-    core.info(JSON.stringify(eventInput));
+    core.info(JSON.stringify(fsnxClient.EventInput));
 
-    const actions = eventInput.client_payload.dispatch_payload.actions;    
-
-    // "get-organization"
-
-    const getOrgAction = actions["get-organization"];
-
-    const getOrgResponse = await FsnxApiClient.ExecuteHttpAction(getOrgAction, args.authority,args.client_id,args.client_secret,args.tenant_id);
-    
-
-    const getSpAction = actions["get-serviceprincipals"];  
-
-    const getSpResponse = await FsnxApiClient.ExecuteHttpAction(getSpAction, args.authority,args.client_id,args.client_secret,args.tenant_id);
+    await fsnxClient.OnStep("get-tenant-organization", async () => {
 
 
-    var output = 
-    {
-        organization: getOrgResponse.body,
-        servicePrincipals: getSpResponse.body
-    };
+        // Process Actions    
+        const getOrgResponse = await fsnxClient.ExecuteHttpAction("get-organization");
 
-    FsnxApiClient.SubmitOutput (output, eventInput.client_payload, args.output_private_key)
+        const getSpResponse = await fsnxClient.ExecuteHttpAction("serviceprincipal-list-by-appid");
 
+        const output = 
+        {
+            organization: getOrgResponse.body,
+            servicePrincipals: getSpResponse.body
+        };
+
+        fsnxClient.SubmitOutput (output)
+
+    });
+
+
+}
+
+module.exports = 
+{
+  executeAction,
 }
