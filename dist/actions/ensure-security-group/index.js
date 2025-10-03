@@ -41603,7 +41603,7 @@ var require_FsnxApiClient = __commonJS({
         const action = this.Actions[actionName];
         if (!action) throw new Error(`Action not found: ${actionName}`);
         let a_payload = action.payload;
-        let authHeader = await GetAuthHeader(action.auth_scopes);
+        let authHeader = await this.GetAuthHeader(action.auth_scopes);
         let auth = { Authorization: authHeader };
         var reqBody = {};
         if (a_payload?.Content?.Body != null) {

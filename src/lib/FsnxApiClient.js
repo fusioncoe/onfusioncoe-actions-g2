@@ -99,7 +99,7 @@ class FsnxApiClient{
 
                 let a_payload = action.payload;
 
-                let authHeader = await GetAuthHeader(action.auth_scopes);
+                let authHeader = await this.GetAuthHeader(action.auth_scopes);
 
                 //console.log(authHeader);
                 //console.log(action.type);
