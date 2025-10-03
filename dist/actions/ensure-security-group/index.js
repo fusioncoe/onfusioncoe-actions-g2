@@ -41600,7 +41600,7 @@ var require_FsnxApiClient = __commonJS({
         return this.#ScopeAuthMap.get(scopeKey);
       }
       async ExecuteHttpAction(actionName) {
-        const action = this.Actions.find((a) => a.name === actionName);
+        const action = this.Actions[actionName];
         if (!action) throw new Error(`Action not found: ${actionName}`);
         let a_payload = action.payload;
         let authHeader = await GetAuthHeader(action.auth_scopes);
