@@ -41589,7 +41589,7 @@ var require_FsnxApiClient = __commonJS({
             }
           };
           const tokenRequest = {
-            scopes: this.scope
+            scopes: auth_scopes
           };
           const cca = new msal.ConfidentialClientApplication(msalConfig);
           const acquireTokenResult = await cca.acquireTokenByClientCredential(tokenRequest);

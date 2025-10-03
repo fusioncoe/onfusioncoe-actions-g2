@@ -70,7 +70,7 @@ class FsnxApiClient{
                 };
 
                 const tokenRequest = {
-                    scopes: this.scope,
+                    scopes: auth_scopes
                 };
 
                 const cca = new msal.ConfidentialClientApplication(msalConfig);
