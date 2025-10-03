@@ -45,14 +45,14 @@ class FsnxApiClient{
 
     async OnStep(stepName,  callback) {
 
-        if (this.#currentStep == stepName)
+        if (this.CurrentStep == stepName)
         {
             core.info(`OnStep: ${stepName}`);
             await callback();
         } 
         else
         {
-            core.info(`Skipping step: ${stepName}, current step is: ${this.#currentStep}`);
+            core.info(`Skipping step: ${stepName}, current step is: ${this.CurrentStep}`);
         }
 
     }

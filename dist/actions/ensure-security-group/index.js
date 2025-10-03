@@ -41574,11 +41574,11 @@ var require_FsnxApiClient = __commonJS({
         return this.#currentStep ??= this.DispatchPayload.current_step;
       }
       async OnStep(stepName, callback) {
-        if (this.#currentStep == stepName) {
+        if (this.CurrentStep == stepName) {
           core2.info(`OnStep: ${stepName}`);
           await callback();
         } else {
-          core2.info(`Skipping step: ${stepName}, current step is: ${this.#currentStep}`);
+          core2.info(`Skipping step: ${stepName}, current step is: ${this.CurrentStep}`);
         }
       }
       async GetAuthHeader(auth_scopes) {
