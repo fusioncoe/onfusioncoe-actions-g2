@@ -106,6 +106,8 @@ class FsnxApiClient{
                 const action = this.Actions[actionName];
                 if (!action) throw new Error(`Action not found: ${actionName}`);
 
+                core.info(`ExecuteHttpAction: ${actionName}`);
+
                 let a_payload = action.payload;
 
                 let authHeader = await this.GetAuthHeader(action.auth_scopes);

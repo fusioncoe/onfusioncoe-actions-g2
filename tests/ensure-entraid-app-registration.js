@@ -32,54 +32,31 @@ const test = async () => {
     const fsnxClient = new FsnxApiClient(args);    
 
     
-        await fsnxClient.OnStep("upsert-app-registration", async () => {
-    
-            // Process Actions    
-            const upsertResponse = await fsnxClient.ExecuteHttpAction("appreg-patch-upsert");
-    
-            const getResponse = await fsnxClient.ExecuteHttpAction("appreg-get-by-uniquename-check");
-    
-            const output = {...getResponse.body};
-    
-            fsnxClient.SubmitOutput (output)
-    
-        });
-    
-        await fsnxClient.OnStep("upsert-app-service-principal", async () => {
-    
-            // Process Actions    
-            const upsertResponse = await fsnxClient.ExecuteHttpAction("appreg-sp-upsertwithappid");
+    await fsnxClient.OnStep("grant=oauth2-permissions", async () => {
 
-            core.info(JSON.stringify(upsertResponse));
+        // Process Each OAth2PermissionGrant Action
+        
+        let i = 1;
+        do
+        {
+            let action = fsnxClient.Actions[`oauth2-grant-action-${i}`];
+            if (action) 
+            {
+                await fsnxClient.ExecuteHttpAction(`oauth2-grant-action-${i}`);
+                i++;
+            }
+            else break;
+        } while (fsnxClient.Actions[`oauth2-grant-action-${i}`]);
 
-            const getResponse = await fsnxClient.ExecuteHttpAction("appreg-sp-get-by-appid-check");
-    
-            const regex = /([A-Z0-9]{8}-[A-Z0-9]{4}-[A-Z0-9]{4}-[A-Z0-9]{4}-[A-Z0-9]{12})/;
-     
-            const oAuth2Action = fsnxClient.Actions["appreg-sp-get-OAuth2PermissionGrants"];
-    
-            core.info(JSON.stringify(getResponse));
+        // get OAUth2PermissionGrants
+        const getOAuth2Response = await fsnxClient.ExecuteHttpAction("appreg-sp-get-OAuth2PermissionGrants");
 
-            core.info(`ResponseBodyId: ${getResponse.body.id}`);
+        const output = {... getOAuth2Response.body
+        };
 
-            let reqUri = oAuth2Action.payload.RequestUri.replace(regex, getResponse.body.id);
+        fsnxClient.SubmitOutput (output)
 
-            core.info(`Original RequestUri: ${oAuth2Action.payload.RequestUri}`);
-            core.info(`Replaced RequestUri: ${reqUri}`);
-
-            oAuth2Action.payload.RequestUri = reqUri;
-    
-            core.info(`RequestUri: ${oAuth2Action.payload.RequestUri}`);
-    
-            const getOAuth2Response = await fsnxClient.ExecuteHttpAction("appreg-sp-get-OAuth2PermissionGrants");
-    
-            const output = {ServicePrincipal:getResponse.body,
-                            OAuth2PermissionGrants: getOAuth2Response.body
-            };
-    
-            fsnxClient.SubmitOutput (output)
-    
-        });    
+    });    
     
 };
 

@@ -41606,6 +41606,7 @@ var require_FsnxApiClient = __commonJS({
       async ExecuteHttpAction(actionName) {
         const action = this.Actions[actionName];
         if (!action) throw new Error(`Action not found: ${actionName}`);
+        core2.info(`ExecuteHttpAction: ${actionName}`);
         let a_payload = action.payload;
         let authHeader = await this.GetAuthHeader(action.auth_scopes);
         let auth = { Authorization: authHeader };
@@ -41728,6 +41729,21 @@ async function executeAction(args) {
     const output = {
       ServicePrincipal: getResponse.body,
       OAuth2PermissionGrants: getOAuth2Response.body
+    };
+    fsnxClient.SubmitOutput(output);
+  });
+  await fsnxClient.OnStep("grant=oauth2-permissions", async () => {
+    let i = 1;
+    do {
+      let action = fsnxClient.Actions[`oauth2-grant-action-${i}`];
+      if (action) {
+        await fsnxClient.ExecuteHttpAction(`oauth2-grant-action-${i}`);
+        i++;
+      } else break;
+    } while (fsnxClient.Actions[`oauth2-grant-action-${i}`]);
+    const getOAuth2Response = await fsnxClient.ExecuteHttpAction("appreg-sp-get-OAuth2PermissionGrants");
+    const output = {
+      ...getOAuth2Response.body
     };
     fsnxClient.SubmitOutput(output);
   });

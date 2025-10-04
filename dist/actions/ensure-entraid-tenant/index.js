@@ -41606,6 +41606,7 @@ var require_FsnxApiClient = __commonJS({
       async ExecuteHttpAction(actionName) {
         const action = this.Actions[actionName];
         if (!action) throw new Error(`Action not found: ${actionName}`);
+        core2.info(`ExecuteHttpAction: ${actionName}`);
         let a_payload = action.payload;
         let authHeader = await this.GetAuthHeader(action.auth_scopes);
         let auth = { Authorization: authHeader };
