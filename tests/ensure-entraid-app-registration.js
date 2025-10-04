@@ -32,31 +32,32 @@ const test = async () => {
     const fsnxClient = new FsnxApiClient(args);    
 
     
-    await fsnxClient.OnStep("grant=oauth2-permissions", async () => {
+    await fsnxClient.OnStep("delete-app-registration", async () => {
 
-        // Process Each OAth2PermissionGrant Action
-        
-        let i = 1;
-        do
-        {
-            let action = fsnxClient.Actions[`oauth2-grant-action-${i}`];
-            if (action) 
-            {
-                await fsnxClient.ExecuteHttpAction(`oauth2-grant-action-${i}`);
-                i++;
-            }
-            else break;
-        } while (fsnxClient.Actions[`oauth2-grant-action-${i}`]);
+ 
 
-        // get OAUth2PermissionGrants
-        const getOAuth2Response = await fsnxClient.ExecuteHttpAction("appreg-sp-get-OAuth2PermissionGrants");
 
-        const output = {... getOAuth2Response.body
+
+        const output = {
         };
 
         fsnxClient.SubmitOutput (output)
 
     });    
+
+
+    await fsnxClient.OnStep("restore-app-registration", async () => {
+
+ 
+
+
+
+        const output = {
+        };
+
+        fsnxClient.SubmitOutput (output)
+
+    });     
     
 };
 

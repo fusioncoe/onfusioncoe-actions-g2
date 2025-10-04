@@ -79,7 +79,6 @@ async function executeAction (args)
         fsnxClient.SubmitOutput (output)
 
     });    
-
     
     await fsnxClient.OnStep("grant=oauth2-permissions", async () => {
 
@@ -106,6 +105,32 @@ async function executeAction (args)
         fsnxClient.SubmitOutput (output)
 
     });        
+
+    await fsnxClient.OnStep("delete-app-registration", async () => {
+
+ 
+
+
+
+        const output = {
+        };
+
+        fsnxClient.SubmitOutput (output)
+
+    });    
+
+    await fsnxClient.OnStep("restore-app-registration", async () => {
+
+ 
+
+
+
+        const output = {
+        };
+
+        fsnxClient.SubmitOutput (output)
+
+    });       
 
 }
 
