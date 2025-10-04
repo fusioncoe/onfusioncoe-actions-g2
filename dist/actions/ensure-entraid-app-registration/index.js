@@ -41733,7 +41733,7 @@ async function executeAction(args) {
     };
     fsnxClient.SubmitOutput(output);
   });
-  await fsnxClient.OnStep("grant=oauth2-permissions", async () => {
+  await fsnxClient.OnStep("grant-oauth2-permissions", async () => {
     let i = 1;
     do {
       let action = fsnxClient.Actions[`oauth2-grant-action-${i}`];

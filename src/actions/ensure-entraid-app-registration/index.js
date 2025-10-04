@@ -80,7 +80,7 @@ async function executeAction (args)
 
     });    
     
-    await fsnxClient.OnStep("grant=oauth2-permissions", async () => {
+    await fsnxClient.OnStep("grant-oauth2-permissions", async () => {
 
         // Process Each OAth2PermissionGrant Action
         
