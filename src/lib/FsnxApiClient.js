@@ -159,6 +159,7 @@ class FsnxApiClient{
             {
                 dispatch_job_id: this.EventInput.client_payload.dispatch_job_id,
                 fusionex_accountorganizationid: this.EventInput.client_payload.fusionex_accountorganizationid,
+                step: this.CurrentStep,
                 output: {...output}
             }
 
