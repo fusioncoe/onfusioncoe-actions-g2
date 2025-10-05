@@ -41749,11 +41749,21 @@ async function executeAction(args) {
     fsnxClient.SubmitOutput(output);
   });
   await fsnxClient.OnStep("delete-app-registration", async () => {
-    const output = {};
+    const deleteResult = await fsnxClient.ExecuteHttpAction("appreg-delete-by-uniquename");
+    core.info(JSON.stringify(deleteResult));
+    const output = {
+      ...deleteResult.body
+    };
     fsnxClient.SubmitOutput(output);
   });
   await fsnxClient.OnStep("restore-app-registration", async () => {
-    const output = {};
+    const countDeleted = await fsnxClient.ExecuteHttpAction("get-deleted-by-uniquename-count");
+    core.info(`Count of deleted app registrations: ${countDeleted.body}`);
+    let output = null;
+    if (Number(countDeleted.body) > 0) {
+      const restoreResult = await fsnxClient.ExecuteHttpAction("restore-deleted-app-registration");
+      output = { ...restoreResult.body };
+    }
     fsnxClient.SubmitOutput(output);
   });
 }

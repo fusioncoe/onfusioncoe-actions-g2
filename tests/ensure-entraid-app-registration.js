@@ -35,29 +35,17 @@ const test = async () => {
     await fsnxClient.OnStep("delete-app-registration", async () => {
 
  
+        const deleteResult = await fsnxClient.ExecuteHttpAction("appreg-delete-by-uniquename");
 
-
+        core.info(JSON.stringify(deleteResult));
 
         const output = {
+            ...deleteResult.body
         };
 
         fsnxClient.SubmitOutput (output)
 
     });    
-
-
-    await fsnxClient.OnStep("restore-app-registration", async () => {
-
- 
-
-
-
-        const output = {
-        };
-
-        fsnxClient.SubmitOutput (output)
-
-    });     
     
 };
 
