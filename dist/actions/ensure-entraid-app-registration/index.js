@@ -41749,7 +41749,7 @@ async function executeAction(args) {
     fsnxClient.SubmitOutput(output);
   });
   await fsnxClient.OnStep("delete-app-registration", async () => {
-    const deleteResult = await fsnxClient.ExecuteHttpAction("appreg-delete-by-uniquename");
+    const deleteResult = await fsnxClient.ExecuteHttpAction("appreg-delete-by-objectid");
     core.info(JSON.stringify(deleteResult));
     const output = {
       ...deleteResult.body

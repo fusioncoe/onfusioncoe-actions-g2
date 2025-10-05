@@ -76,7 +76,7 @@ async function executeAction (args)
     await fsnxClient.OnStep("delete-security-group", async () => {
 
  
-        const deleteResult = await fsnxClient.ExecuteHttpAction("delete-by-unique-name");
+        const deleteResult = await fsnxClient.ExecuteHttpAction("delete-group-by-objectid");
 
         core.info(JSON.stringify(deleteResult));
 
