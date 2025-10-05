@@ -50,53 +50,64 @@ catch (error => {
 
 async function executeAction (args)
 {
-    core.info("currently running ensure-security-group test");
+    core.info("currently running ensure-security-group");
 
     const fsnxClient = new FsnxApiClient(args);
 
-    core.info(JSON.stringify(fsnxClient.EventInput));
 
-    const upsertSecGrpAction = fsnxClient.Actions["group-patch-upsert"];
+    await fsnxClient.OnStep("upsert-security-group", async () => {
 
-    core.info(`Adding or updating security group "${upsertSecGrpAction.payload.Content.Body.displayName}"`)
-    const upsertresponse = await fsnxClient.ExecuteHttpAction("group-patch-upsert");
+         //core.info(JSON.stringify(fsnxClient.EventInput));
 
-    if (upsertresponse.ok) 
-    {
+        const upsertSecGrpAction = fsnxClient.Actions["group-patch-upsert"];
 
-        let secObj = upsertresponse.body;
+        core.info(`Adding or updating security group "${upsertSecGrpAction.payload.Content.Body.displayName}"`)
+         // Process Actions    
+        const upsertResponse = await fsnxClient.ExecuteHttpAction("group-patch-upsert");
 
+        const getResponse = await fsnxClient.ExecuteHttpAction("group-get-by-uniquename-check");
 
-        if (secObj == null )
+        const output = {...getResponse.body};
+
+        fsnxClient.SubmitOutput (output)
+
+    });       
+
+    await fsnxClient.OnStep("delete-security-group", async () => {
+
+ 
+        const deleteResult = await fsnxClient.ExecuteHttpAction("delete-by-unique-name");
+
+        core.info(JSON.stringify(deleteResult));
+
+        const output = {
+            ...deleteResult.body
+        };
+
+        fsnxClient.SubmitOutput (output)
+
+    });      
+
+    await fsnxClient.OnStep("restore-security-group", async () => {
+
+ 
+        // Returns just a count.
+        const countDeleted = await fsnxClient.ExecuteHttpAction("get-deleted-by-uniquename-count");
+
+        core.info(`Count of deleted app registrations: ${countDeleted.body}`);
+
+        let output = null;
+
+        if (Number(countDeleted.body) > 0)
         {
-
-            core.info("Security group already exists.  Retrieving Object Id");
-
-            const getResponse = await fsnxClient.ExecuteHttpAction("group-get-by-uniquename-check");
-
-            if (getResponse.ok) {
-                secObj = getResponse.body;
-            }
-            else
-            {
-                
-            }
+            const restoreResult = await fsnxClient.ExecuteHttpAction("restore-deleted-security-group");     
+            output = {...restoreResult.body};     
         }
 
-        core.info(JSON.stringify(secObj))
+        fsnxClient.SubmitOutput (output)
 
-        core.setOutput('object_id',secObj?.id);
+    });   
 
-        // Test Output Functionality
-
-        fsnxClient.SubmitOutput (secObj)
-
-    }
-    else
-    {
-        // TODO:  Throw Exception
-
-    }
 
 }
 
