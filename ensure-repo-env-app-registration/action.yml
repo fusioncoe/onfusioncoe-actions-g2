@@ -1,0 +1,37 @@
+name: "ensure-repo-env-app-registration"
+description: "ensure-repo-env-app-registration"
+
+inputs:
+  client_id:
+    description: "The application id to authenticate with."
+    required: true
+
+  tenant_id:
+    description: "Tenant id if using app-id & client secret to authenticate."
+    required: true
+
+  cloud:
+    description: 'Cloud instance to authenticate with. Default: Public. See "pac auth create help" for valid cloud instance names'
+    required: false
+    default: 'Public'
+
+  authority:
+    description: 'Microsoft authentication authority for the target cloud.'
+    required: false
+    default: 'https://login.microsoftonline.com/'
+
+  client_secret:
+    description: "The client secret to authenticate with. Required if authenticating with app-id."
+    required: true
+
+  event_path:
+    description: "The path to the file on the runner that contains the full event webhook payload."
+    required: true    
+
+  output_private_key:
+    description: "Private key used to authenticate service management output requests"
+    required: true       
+
+runs:
+ using: "node20"
+ main: "../dist/actions/ensure-repo-env-app-registration/index.js"   
