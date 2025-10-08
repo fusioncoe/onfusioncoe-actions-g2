@@ -35,7 +35,7 @@ catch (error => {
 async function executeAction (args)
 {
 
-    info("currently running ensure-repo-env-app-registration")
+    core.info("currently running ensure-repo-env-app-registration")
 
     const fsnxClient = new FsnxApiClient(args);
 
