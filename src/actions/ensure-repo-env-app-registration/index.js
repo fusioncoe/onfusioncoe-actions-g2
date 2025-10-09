@@ -31,7 +31,7 @@ catch (error => {
     core.setFailed(error.message);
 });
 
-async function executeAction (args)
+export async function executeAction (args)
 {
 
     core.info("currently running ensure-repo-env-app-registration")
@@ -93,6 +93,6 @@ async function executeAction (args)
     }); 
 }
 
-export {
-  executeAction,
-}
+// export {
+//   executeAction,
+// }
