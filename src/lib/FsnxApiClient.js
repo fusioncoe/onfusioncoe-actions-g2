@@ -1,16 +1,25 @@
 // FsnxApiClient.js
 
 //const core = require('@actions/core');
-const msal = require('@azure/msal-node');
-const crypto = require('crypto');
+//const msal = require('@azure/msal-node');
+import * as msal from "@azure/msal-node";
+//const crypto = require('crypto');
+import crypto from 'crypto';
+import { Octokit } from '@octokit/rest';
+//import NodeRSA from "node-rsa";
 
-const core = require('@actions/core');
+import fs from 'fs';
+
+//const fetch = require('node-fetch');
+
+//const core = require('@actions/core');
+import core from '@actions/core';
 //const { buffer } = require('stream/consumers');
 
 //const ScopeAuthMap = new Map();
 
 
-class FsnxApiClient{
+export class FsnxApiClient{
     constructor({authority, client_id, client_secret, tenant_id, cloud, output_private_key, event_path}) {
         this.authority = authority;
         this.client_id = client_id;
@@ -25,7 +34,8 @@ class FsnxApiClient{
 
     #eventInput;
     get EventInput() {
-        return this.#eventInput ??= require(this.event_path);
+        //return this.#eventInput ??= import(this.event_path) assert { type: 'json' };;
+        return this.#eventInput ??= JSON.parse(fs.readFileSync(this.event_path, 'utf8'));
     }
 
     #actions;
@@ -41,6 +51,22 @@ class FsnxApiClient{
     #currentStep;
     get CurrentStep() {
         return this.#currentStep ??= this.DispatchPayload.current_step;
+    }
+
+    #api_auth;
+    async GetAppAuthToken()
+    {
+        return this.#api_auth ??= await DecryptData(this.EventInput.client_payload.api_token_rsa, this.output_private_key);
+    }
+
+    #octokit;
+    async Octokit() {
+        
+        return  this.#octokit ??= new Octokit({
+                    auth: await this.GetAppAuthToken(),
+                    baseUrl: this.EventInput.client_payload.api_baseurl,
+                    userAgent: this.EventInput.client_payload.api_userAgent,
+        });
     }
 
     async OnStep(stepName,  callback) {
@@ -158,10 +184,11 @@ class FsnxApiClient{
             const outputBodyObject =
             {
                 dispatch_job_id: this.EventInput.client_payload.dispatch_job_id,
-                fusionex_accountorganizationid: this.EventInput.client_payload.fusionex_accountorganizationid,
                 step: this.CurrentStep,
                 output: {...output}
             }
+
+           
 
             const outputBodyJson ={ body: JSON.stringify(outputBodyObject)}
             const outputSha = await GenerateSHA(outputBodyJson.body);
@@ -172,8 +199,17 @@ class FsnxApiClient{
 
             const outputReqHeaders = {"Content-Type": "application/json",
                     "fusionex-output-sha": outputSha,
-                    "fusionex-auth-rsa-sha": rsaSha,
-                    "fusionex-accountorganizationid": this.EventInput.client_payload.fusionex_accountorganizationid }
+                    "fusionex-auth-rsa-sha": rsaSha}
+
+            if (this.EventInput.client_payload.fusionex_accountorganizationid != null){
+                outputBodyObject["fusionex_accountorganizationid"] = this.EventInput.client_payload.fusionex_accountorganizationid;
+                outputReqHeaders["fusionex-accountorganizationid"] = this.EventInput.client_payload.fusionex_accountorganizationid;
+            }
+
+            if (this.EventInput.client_payload.fusionex_gitrepositoryid != null){
+                outputBodyObject["fusionex_gitrepositoryid"] = this.EventInput.client_payload.fusionex_gitrepositoryid;
+                outputReqHeaders["fusionex-gitrepositoryid"] = this.EventInput.client_payload.fusionex_gitrepositoryid;
+            }                     
 
             //core.info (JSON.stringify(outputReqHeaders))
 
@@ -191,7 +227,69 @@ class FsnxApiClient{
 
     }
 
-    
+    async CreateOrUpdateRepoSecret({plainText, repo,secret_name,}) 
+        {
+
+            core.info(`Creating or updating secret ${secret_name} in repo ${repo}`)
+
+            // Get Public Key
+            const pubKeyResponse = await this.Octokit.actions.getRepoPublicKey({
+                repo: repo,
+            });
+
+            core.info(JSON.stringify(pubKeyResponse));
+
+            const repoSecret = await this.Octokit.actions.createOrUpdateRepoSecret({
+                //owner: this.EventInput.repository.owner.login,
+                repo: repo,
+                secret_name: secret_name,
+                encrypted_value: await SealSecretValue(plainText, pubKeyResponse.data.key),
+                key_id: pubKeyResponse.data.key_id,
+            });
+
+            return repoSecret;
+        }
+
+    async CreateOrUpdateEnvironmentSecret({plainText, repo, environment_name, secret_name,}) 
+        {
+            core.info(`Creating or updating secret ${secret_name} in environment ${environment_name} of repo ${repo}`)
+
+            // Get Public Key
+            const pubKeyResponse = await this.Octokit().rest.actions.getRepoPublicKey({
+                repo: repo,
+            });
+
+            core.info(JSON.stringify(pubKeyResponse));
+
+            const repoSecret = await this.Octokit().rest.actions.createOrUpdateEnvironmentSecret({
+                //owner: this.EventInput.repository.owner.login,
+                repo: repo,
+                secret_name: secret_name,
+                environment_name: environment_name,
+                encrypted_value: await SealSecretValue(plainText, pubKeyResponse.data.key),
+                key_id: pubKeyResponse.data.key_id,
+            });
+
+            return repoSecret;
+    }
+}
+
+async function SealSecretValue(plainText, publicKey)
+{
+        const sodium = require('tweetsodium');
+
+        const key = publicKey;
+        const value = plainText;
+
+        // Convert the message and key to Uint8Array's (Buffer implements that interface)
+        const messageBytes = Buffer.from(value);
+        const keyBytes = Buffer.from(key, 'base64');
+
+        // Encrypt using LibSodium.
+        const encryptedBytes = sodium.seal(messageBytes, keyBytes);
+
+        // Base64 the encrypted secret
+        return Buffer.from(encryptedBytes).toString('base64');
 }
 
 async function GenerateSHA(input) {
@@ -215,11 +313,51 @@ async function EncryptData(input, pemKey) {
     ).toString("base64");
 }
 
+async function DecryptData(encryptedData, pemKey) {
+
+    // const key = new NodeRSA(pemKey);
+    // key.setOptions({encryptionScheme: 'pkcs1'}); // important
+
+    // return key.decrypt(Buffer.from(encryptedData, "base64")).toString("utf8");
+  
+    const decryptedText = crypto.privateDecrypt(
+    {
+        key: Buffer.from(pemKey),
+        padding: crypto.constants.RSA_PKCS1_PADDING,
+        
+        //oaepHash: "sha256",
+    },
+    // We convert the base64 string back to a buffer
+    Buffer.from(encryptedData, "base64")
+    ).toString("utf8");
+
+    core.info(`Decrypted text: ${decryptedText}`);
+
+    return decryptedText;
 
 
-module.exports = 
-{
-  FsnxApiClient,
-  GenerateSHA,
-  EncryptData,
+    // return crypto.privateDecrypt(
+    // {
+    //     key: Buffer.from(pemKey),
+    //     padding: crypto.constants.RSA_PKCS1_PADDING,
+        
+    //     //oaepHash: "sha256",
+    // },
+    // // We convert the base64 string back to a buffer
+    // Buffer.from(encryptedData, "base64")
+    // ).toString("utf8");
 }
+
+
+
+
+
+
+
+
+// module.exports = 
+// {
+//   FsnxApiClient,
+//   GenerateSHA,
+//   EncryptData,
+// }

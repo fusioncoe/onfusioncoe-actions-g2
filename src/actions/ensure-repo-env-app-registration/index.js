@@ -39,18 +39,59 @@ async function executeAction (args)
 
     const fsnxClient = new FsnxApiClient(args);
 
-    //core.info(JSON.stringify(fsnxClient.EventInput));
-
-   await fsnxClient.OnStep("<<STEP_NAME>>", async () => {
+         await fsnxClient.OnStep("create-or-update-secret", async () => {
 
         // Process Actions    
-        const response = await fsnxClient.ExecuteHttpAction("<<ACTION_NAME>>");
+            const GetSecrets = await fsnxClient.ExecuteHttpAction("get-current-secrets");
 
-        const output = {...response.body};
+            const CreateSecret = await fsnxClient.ExecuteHttpAction("create-secret-credential");
 
-        fsnxClient.SubmitOutput (output)
+            const SetEnvSecretArgs = fsnxClient.Actions["upsert-environment-secret"].payload;
 
-    });
+            core.info(JSON.stringify(SetEnvSecretArgs));
+
+            SetEnvSecretArgs.plainText = CreateSecret.body.secretText;
+
+            const octokit = new Octokit({
+                    auth: await fsnxClient.GetAppAuthToken(),
+                    baseUrl: fsnxClient.EventInput.client_payload.api_baseurl,
+                    userAgent: fsnxClient.EventInput.client_payload.api_userAgent,
+            });
+
+            const pubKeyResponse = await octokit.rest.actions.getEnvironmentPublicKey({
+                owner: SetEnvSecretArgs.owner,
+                repo: SetEnvSecretArgs.repo,
+                environment_name: SetEnvSecretArgs.environment_name,
+                headers: {
+                        'X-GitHub-Api-Version': '2022-11-28'
+                    }
+            });
+
+            core.info(JSON.stringify(pubKeyResponse));
+
+            const repoSecret = await octokit.rest.actions.createOrUpdateEnvironmentSecret({
+                owner: SetEnvSecretArgs.owner,
+                repo: SetEnvSecretArgs.repo,
+                secret_name: SetEnvSecretArgs.secret_name,
+                environment_name: SetEnvSecretArgs.environment_name,
+                encrypted_value: await SealSecretValue(SetEnvSecretArgs.plainText, pubKeyResponse.data.key),
+                key_id: pubKeyResponse.data.key_id,
+                                headers: {
+                        'X-GitHub-Api-Version': '2022-11-28'
+                    }
+            });            
+
+
+
+            //const upsertEnvSecretResponse = await fsnxClient.CreateOrUpdateEnvironmentSecret(SetEnvSecretArgs);
+
+            const output = { 
+                ...Object.fromEntries(Object.entries(CreateSecret.body).filter(([key]) => key !== 'secretText')),               
+            };
+
+            fsnxClient.SubmitOutput (output)
+
+    }); 
 
 }
 
