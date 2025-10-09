@@ -1,12 +1,16 @@
 
-const gulp = require('gulp');
-const {glob} = require('glob');
-const esbuild = require('esbuild')
-const fs = require('fs-extra')
-const path = require('path');
-const log = require('fancy-log');
+import gulp from 'gulp';
+import {glob} from 'glob';
+import esbuild from 'esbuild';
+import fs from 'fs-extra';
+import path from 'path';
+import log from 'fancy-log';
+import { fileURLToPath } from 'url';
 
-const ignoreYaml = require("./ignoreYaml.json");
+import ignoreYaml from "./ignoreYaml.json" assert { type: 'json' };
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 const outdir = path.resolve('./out');
 const distdir = path.resolve('./dist');
@@ -39,5 +43,5 @@ async function build() {
         });
     });
 }
-exports.default = defaultTask;
-exports.build = build;
+
+export { defaultTask as default, build };

@@ -3,10 +3,11 @@
 //const core = require('@actions/core');
 //const msal = require('@azure/msal-node');
 import * as msal from "@azure/msal-node";
-//const crypto = require('crypto');
 import crypto from 'crypto';
 import { Octokit } from '@octokit/rest';
 //import NodeRSA from "node-rsa";
+import nacl from 'tweetnacl';
+import { blake2b } from 'blakejs';
 
 import fs from 'fs';
 
@@ -276,10 +277,26 @@ export class FsnxApiClient{
 
 async function SealSecretValue(plainText, publicKey)
 {
-        const sodium = require('tweetsodium');
-
-        const key = publicKey;
-        const value = plainText;
+        // Implementation using tweetnacl (replicating tweetsodium functionality)
+        const key = Buffer.from(publicKey, 'base64');
+        const value = Buffer.from(plainText, 'utf8');
+        
+        // Generate random keypair for sealing
+        const ephemeralKeyPair = nacl.box.keyPair();
+        
+        // Create nonce using blake2b hash of the ephemeral public key
+        const nonce = blake2b(ephemeralKeyPair.publicKey, null, 24);
+        
+        // Seal the message
+        const sealed = nacl.box(value, nonce, key, ephemeralKeyPair.secretKey);
+        
+        // Concatenate ephemeral public key and sealed message
+        const result = new Uint8Array(ephemeralKeyPair.publicKey.length + sealed.length);
+        result.set(ephemeralKeyPair.publicKey);
+        result.set(sealed, ephemeralKeyPair.publicKey.length);
+        
+        // Return base64 encoded result
+        return Buffer.from(result).toString('base64');
 
         // Convert the message and key to Uint8Array's (Buffer implements that interface)
         const messageBytes = Buffer.from(value);
@@ -315,10 +332,6 @@ async function EncryptData(input, pemKey) {
 
 async function DecryptData(encryptedData, pemKey) {
 
-    // const key = new NodeRSA(pemKey);
-    // key.setOptions({encryptionScheme: 'pkcs1'}); // important
-
-    // return key.decrypt(Buffer.from(encryptedData, "base64")).toString("utf8");
   
     const decryptedText = crypto.privateDecrypt(
     {
@@ -335,23 +348,7 @@ async function DecryptData(encryptedData, pemKey) {
 
     return decryptedText;
 
-
-    // return crypto.privateDecrypt(
-    // {
-    //     key: Buffer.from(pemKey),
-    //     padding: crypto.constants.RSA_PKCS1_PADDING,
-        
-    //     //oaepHash: "sha256",
-    // },
-    // // We convert the base64 string back to a buffer
-    // Buffer.from(encryptedData, "base64")
-    // ).toString("utf8");
 }
-
-
-
-
-
 
 
 

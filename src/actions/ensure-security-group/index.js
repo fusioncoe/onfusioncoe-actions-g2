@@ -1,14 +1,8 @@
 // ensure-security-group
 
-//const {getInput} = require('@actions/core');
-//const {startGroup} = require('@actions/core');
-//const {endGroup} = require('@actions/core');
-//const {setFailed} = require('@actions/core');
-//const {info} = require('@actions/core');
-const core = require('@actions/core');
+import core from '@actions/core';
 
-
-const {FsnxApiClient} = require('../../lib/FsnxApiClient.js');
+import {FsnxApiClient} from '../../lib/FsnxApiClient.js';
 
 
 //const msal = require('@azure/msal-node');
@@ -111,7 +105,6 @@ async function executeAction (args)
 
 }
 
-module.exports = 
-{
+export {
   executeAction,
 }

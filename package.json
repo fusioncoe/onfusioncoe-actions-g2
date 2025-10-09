@@ -18,10 +18,15 @@
     "@azure/msal-node": "^3.8.0",
     "@microsoft/microsoft-graph-client": "^3.0.7",
     "@octokit/rest": "^22.0.0",
+    "@stablelib/random": "^2.0.1",
+    "@stablelib/x25519": "^2.0.1",
+    "@stablelib/xchacha20poly1305": "^2.0.1",
+    "blakejs": "^1.2.1",
     "isomorphic-fetch": "^3.0.0",
     "node-rsa": "^1.1.1",
     "readline-sync": "^1.4.10",
-    "tweetsodium": "^0.0.6",
+    "tweetnacl": "^1.0.3",
+    "tweetnacl-util": "^0.15.1",
     "xml2js": "^0.6.2"
   },
   "devDependencies": {

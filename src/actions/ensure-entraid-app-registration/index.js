@@ -1,8 +1,7 @@
 // ensure-entraid-app-registration
 
-
-const core = require('@actions/core');
-const {FsnxApiClient} = require('../../lib/FsnxApiClient.js');
+import core from '@actions/core';
+import {FsnxApiClient} from '../../lib/FsnxApiClient.js';
 
 //const msal = require('@azure/msal-node');
 
@@ -143,7 +142,6 @@ async function executeAction (args)
 
 }
 
-module.exports = 
-{
+export {
   executeAction,
 }

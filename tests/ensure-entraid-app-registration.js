@@ -1,16 +1,16 @@
 // ensure-entraid-app-registration - Test Script
 
-const core = require('@actions/core');
-const msal = require('@azure/msal-node');
-const fs = require('fs');
+import core from '@actions/core';
+import * as msal from '@azure/msal-node';
+import fs from 'fs';
+import path from 'path';
+import { fileURLToPath } from 'url';
 
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
-
-
-const path = require('path');
-
-const {FsnxApiClient} = require('../src/lib/FsnxApiClient.js');
-const inputs = require('../.testinput/authenticate-cicd-serviceprincipal.json');
+import {FsnxApiClient} from '../src/lib/FsnxApiClient.js';
+import inputs from '../.testinput/authenticate-cicd-serviceprincipal.json' assert { type: 'json' };
 
 
 const privateKeyPath = path.resolve(`${__dirname}\\..\\.testinput\\acctorg-private-key.pem`)

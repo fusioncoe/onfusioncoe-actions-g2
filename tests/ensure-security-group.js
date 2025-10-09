@@ -1,13 +1,11 @@
-const core = require('@actions/core');
-const msal = require('@azure/msal-node');
-const fs = require('fs');
+import core from '@actions/core';
+import * as msal from '@azure/msal-node';
+import fs from 'fs';
+import path from 'path';
 
-const path = require('path');
-
-const {FsnxApiClient} = require('../src/lib/FsnxApiClient.js');
-const inputs = require('../.testinput/authenticate-cicd-serviceprincipal.json');
-
-const eventInput = require('../.testinput/ensure-security-group.json');
+import {FsnxApiClient} from '../src/lib/FsnxApiClient.js';
+import inputs from '../.testinput/authenticate-cicd-serviceprincipal.json' assert { type: 'json' };
+import eventInput from '../.testinput/ensure-security-group.json' assert { type: 'json' };
 
 //const executeAction = require('../src/actions/ensure-security-group/index.js').executeAction;
 
