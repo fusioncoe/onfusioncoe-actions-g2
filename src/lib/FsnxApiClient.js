@@ -336,9 +336,8 @@ async function DecryptData(encryptedData, pemKey) {
     const decryptedText = crypto.privateDecrypt(
     {
         key: Buffer.from(pemKey),
-        padding: crypto.constants.RSA_PKCS1_PADDING,
-        
-        //oaepHash: "sha256",
+        padding: crypto.constants.RSA_PKCS1_OAEP_PADDING,
+        oaepHash: "sha256",
     },
     // We convert the base64 string back to a buffer
     Buffer.from(encryptedData, "base64")
