@@ -40,7 +40,14 @@ async function build() {
             entryPoints: [ path.resolve(sourcedir, actionPath, 'index.js') ],
             outfile: path.join(actionDistDir, 'index.js'),
             platform: 'node',
+            format: 'cjs',
+            target: 'node18',
         });
+        
+        // Create package.json for CommonJS in dist folder
+        fs.writeFileSync(path.join(actionDistDir, 'package.json'), JSON.stringify({
+            "type": "commonjs"
+        }, null, 2));
     });
 }
 

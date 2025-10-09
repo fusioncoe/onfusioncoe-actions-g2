@@ -37191,7 +37191,7 @@ function createLogger(logger = {}) {
   return logger;
 }
 var userAgentTrail = `octokit-core.js/${VERSION4} ${getUserAgent()}`;
-var Octokit2 = class {
+var Octokit = class {
   static VERSION = VERSION4;
   static defaults(defaults) {
     const OctokitWithDefaults = class extends this {
@@ -39786,7 +39786,7 @@ legacyRestEndpointMethods.VERSION = VERSION7;
 var VERSION8 = "22.0.0";
 
 // node_modules/@octokit/rest/dist-src/index.js
-var Octokit3 = Octokit2.plugin(requestLog, legacyRestEndpointMethods, paginateRest).defaults(
+var Octokit2 = Octokit.plugin(requestLog, legacyRestEndpointMethods, paginateRest).defaults(
   {
     userAgent: `octokit-rest.js/${VERSION8}`
   }
@@ -39830,7 +39830,7 @@ var FsnxApiClient = class {
   }
   #octokit;
   async Octokit() {
-    return this.#octokit ??= new Octokit3({
+    return this.#octokit ??= new Octokit2({
       auth: await this.GetAppAuthToken(),
       baseUrl: this.EventInput.client_payload.api_baseurl,
       userAgent: this.EventInput.client_payload.api_userAgent
@@ -39940,7 +39940,7 @@ var FsnxApiClient = class {
       //owner: this.EventInput.repository.owner.login,
       repo,
       secret_name,
-      encrypted_value: await SealSecretValue2(plainText, pubKeyResponse.data.key),
+      encrypted_value: await SealSecretValue(plainText, pubKeyResponse.data.key),
       key_id: pubKeyResponse.data.key_id
     });
     return repoSecret;
@@ -39956,13 +39956,13 @@ var FsnxApiClient = class {
       repo,
       secret_name,
       environment_name,
-      encrypted_value: await SealSecretValue2(plainText, pubKeyResponse.data.key),
+      encrypted_value: await SealSecretValue(plainText, pubKeyResponse.data.key),
       key_id: pubKeyResponse.data.key_id
     });
     return repoSecret;
   }
 };
-async function SealSecretValue2(plainText, publicKey) {
+async function SealSecretValue(plainText, publicKey) {
   const key = Buffer.from(publicKey, "base64");
   const value = Buffer.from(plainText, "utf8");
   const ephemeralKeyPair = import_tweetnacl.default.box.keyPair();
@@ -40037,7 +40037,7 @@ async function executeAction(args) {
     const SetEnvSecretArgs = fsnxClient.Actions["upsert-environment-secret"].payload;
     import_core3.default.info(JSON.stringify(SetEnvSecretArgs));
     SetEnvSecretArgs.plainText = CreateSecret.body.secretText;
-    const octokit = new Octokit({
+    const octokit = new Octokit2({
       auth: await fsnxClient.GetAppAuthToken(),
       baseUrl: fsnxClient.EventInput.client_payload.api_baseurl,
       userAgent: fsnxClient.EventInput.client_payload.api_userAgent

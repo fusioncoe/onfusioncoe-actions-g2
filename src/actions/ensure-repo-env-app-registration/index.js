@@ -1,7 +1,8 @@
 // ensure-repo-env-app-registration
 
 import core from '@actions/core';
-import {FsnxApiClient} from '../../lib/FsnxApiClient.js';
+import {FsnxApiClient, SealSecretValue} from '../../lib/FsnxApiClient.js';
+import { Octokit } from '@octokit/rest';
 
 //const msal = require('@azure/msal-node');
 
@@ -92,7 +93,3 @@ export async function executeAction (args)
 
     }); 
 }
-
-// export {
-//   executeAction,
-// }

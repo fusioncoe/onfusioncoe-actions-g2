@@ -350,7 +350,7 @@ async function DecryptData(encryptedData, pemKey) {
 
 }
 
-
+export { SealSecretValue, GenerateSHA, EncryptData, DecryptData };
 
 // module.exports = 
 // {
