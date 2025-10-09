@@ -23,6 +23,7 @@
     "@stablelib/xchacha20poly1305": "^2.0.1",
     "blakejs": "^1.2.1",
     "isomorphic-fetch": "^3.0.0",
+    "libsodium-wrappers": "^0.7.15",
     "node-rsa": "^1.1.1",
     "readline-sync": "^1.4.10",
     "tweetnacl": "^1.0.3",

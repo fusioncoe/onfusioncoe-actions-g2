@@ -118,7 +118,8 @@ async function executeAction (args)
 
         fsnxClient.SubmitOutput (output)
 
-    });      
+    });  
+    
 
     await fsnxClient.OnStep("restore-app-registration", async () => {
 

@@ -6,8 +6,13 @@ import * as msal from "@azure/msal-node";
 import crypto from 'crypto';
 import { Octokit } from '@octokit/rest';
 //import NodeRSA from "node-rsa";
-import nacl from 'tweetnacl';
-import { blake2b } from 'blakejs';
+//import nacl from 'tweetnacl';
+//import { blake2b } from 'blakejs';
+
+//import {sodium} from 'tweetsodium';
+
+import libsodium from "libsodium-wrappers";
+
 
 import fs from 'fs';
 
@@ -128,12 +133,19 @@ export class FsnxApiClient{
 
     }
 
-    async ExecuteHttpAction (actionName)
+    async ExecuteHttpAction (actionName, resourceId)
     {
                 const action = this.Actions[actionName];
                 if (!action) throw new Error(`Action not found: ${actionName}`);
 
                 core.info(`ExecuteHttpAction: ${actionName}`);
+
+                let reqUri = action.payload.RequestUri;
+                if (resourceId)
+                {
+                    core.info(`${actionName} : Replacing empty resource ID in ${reqUri} to ${resourceId}`);                    
+                    reqUri = reqUri.replace(/00000000-0000-0000-0000-000000000000/g, resourceId);
+                }
 
                 let a_payload = action.payload;
 
@@ -151,7 +163,7 @@ export class FsnxApiClient{
                 
                 //console.log(reqBody);
 
-                const response = await fetch(action.payload.RequestUri, 
+                const response = await fetch(reqUri, 
                 {
                     credentials: "include",
                     method: a_payload.Method,
@@ -166,6 +178,13 @@ export class FsnxApiClient{
                 {
                     responseBody.body = await response.json();
                     //console.log(responseJson);
+                }
+                
+                // Check if response is not ok and throw an error
+                if (!response.ok) {
+                    const errorMessage = `HTTP ${response.status} ${response.statusText} for ${actionName} at ${reqUri}`;
+                    const errorDetails = responseBody.body ? `: ${JSON.stringify(responseBody.body)}` : '';
+                    throw new Error(errorMessage + errorDetails);
                 }
                 
                 return {
@@ -277,36 +296,44 @@ export class FsnxApiClient{
 
 async function SealSecretValue(plainText, publicKey)
 {
-        // Implementation using tweetnacl (replicating tweetsodium functionality)
-        const key = Buffer.from(publicKey, 'base64');
-        const value = Buffer.from(plainText, 'utf8');
+
+    await libsodium.ready;
+    //const sodium = libsodium    ;
+
+        // // Implementation using tweetnacl (replicating tweetsodium functionality)
+        // const key = Buffer.from(publicKey, 'base64');
+        // const value = Buffer.from(plainText, 'utf8');
         
-        // Generate random keypair for sealing
-        const ephemeralKeyPair = nacl.box.keyPair();
+        // // Generate random keypair for sealing
+        // const ephemeralKeyPair = nacl.box.keyPair();
         
-        // Create nonce using blake2b hash of the ephemeral public key
-        const nonce = blake2b(ephemeralKeyPair.publicKey, null, 24);
+        // // Create nonce using blake2b hash of the ephemeral public key
+        // const nonce = blake2b(ephemeralKeyPair.publicKey, null, 24);
         
-        // Seal the message
-        const sealed = nacl.box(value, nonce, key, ephemeralKeyPair.secretKey);
+        // // Seal the message
+        // const sealed = nacl.box(value, nonce, key, ephemeralKeyPair.secretKey);
         
-        // Concatenate ephemeral public key and sealed message
-        const result = new Uint8Array(ephemeralKeyPair.publicKey.length + sealed.length);
-        result.set(ephemeralKeyPair.publicKey);
-        result.set(sealed, ephemeralKeyPair.publicKey.length);
+        // // Concatenate ephemeral public key and sealed message
+        // const result = new Uint8Array(ephemeralKeyPair.publicKey.length + sealed.length);
+        // result.set(ephemeralKeyPair.publicKey);
+        // result.set(sealed, ephemeralKeyPair.publicKey.length);
         
-        // Return base64 encoded result
-        return Buffer.from(result).toString('base64');
+        // // Return base64 encoded result
+        // return Buffer.from(result).toString('base64');
 
         // Convert the message and key to Uint8Array's (Buffer implements that interface)
-        const messageBytes = Buffer.from(value);
-        const keyBytes = Buffer.from(key, 'base64');
+        const messageBytes = Buffer.from(plainText);
+        const keyBytes = Buffer.from(publicKey, 'base64');
 
         // Encrypt using LibSodium.
-        const encryptedBytes = sodium.seal(messageBytes, keyBytes);
+        const encryptedBytes = libsodium.crypto_box_seal(plainText, keyBytes);
+
+        const encryptedString = Buffer.from(encryptedBytes).toString('base64');
+
+        core.info(`Encrypted bytes: ${encryptedString}`);
 
         // Base64 the encrypted secret
-        return Buffer.from(encryptedBytes).toString('base64');
+        return encryptedString;
 }
 
 async function GenerateSHA(input) {
@@ -349,7 +376,11 @@ async function DecryptData(encryptedData, pemKey) {
 
 }
 
-export { SealSecretValue, GenerateSHA, EncryptData, DecryptData };
+function ReplaceEmptyGuid (text, newGuid) {
+    return text.replace(/00000000-0000-0000-0000-000000000000/g, newGuid);
+}
+
+export { SealSecretValue, GenerateSHA, EncryptData, DecryptData, ReplaceEmptyGuid };
 
 // module.exports = 
 // {

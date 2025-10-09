@@ -14,7 +14,7 @@ import { Octokit } from '@octokit/rest';
 
 
 //const {FsnxApiClient} = require('../src/lib/FsnxApiClient.js');
-import { FsnxApiClient } from '../src/lib/FsnxApiClient.js';
+import { FsnxApiClient, SealSecretValue } from '../src/lib/FsnxApiClient.js';
 
 
 //const inputs = require('../.testinput/authenticate-cicd-serviceprincipal.json');
@@ -56,55 +56,82 @@ const test = async () => {
         // Process Actions    
             const GetSecrets = await fsnxClient.ExecuteHttpAction("get-current-secrets");
 
-            const CreateSecret = await fsnxClient.ExecuteHttpAction("create-secret-credential");
-
             const SetEnvSecretArgs = fsnxClient.Actions["upsert-environment-secret"].payload;
+            core.info(JSON.stringify(SetEnvSecretArgs));  
 
-            core.info(JSON.stringify(SetEnvSecretArgs));
+            const currentSecretKeyId = SetEnvSecretArgs.secret_id;
+            const expirationCheckDate = SetEnvSecretArgs.expiration_check_date;
 
-            SetEnvSecretArgs.plainText = CreateSecret.body.secretText;
+            let currentSecret = GetSecrets.body.passwordCredentials.find(cred => cred.keyId === currentSecretKeyId);
 
-            const octokit = new Octokit({
-                    auth: await fsnxClient.GetAppAuthToken(),
-                    baseUrl: fsnxClient.EventInput.client_payload.api_baseurl,
-                    userAgent: fsnxClient.EventInput.client_payload.api_userAgent,
-            });
+            if (currentSecret == null || currentSecret === undefined || currentSecret.endDateTime < expirationCheckDate)
+            {
+                core.info("Creating new secret credential");
 
-            const pubKeyResponse = await octokit.rest.actions.getEnvironmentPublicKey({
-                owner: SetEnvSecretArgs.owner,
-                repo: SetEnvSecretArgs.repo,
-                environment_name: SetEnvSecretArgs.environment_name,
-                headers: {
-                        'X-GitHub-Api-Version': '2022-11-28'
-                    }
-            });
+                const CreateSecret = await fsnxClient.ExecuteHttpAction("create-secret-credential", GetSecrets.body.id);
 
-            core.info(JSON.stringify(pubKeyResponse));
+                const secret  = CreateSecret.body.secretText;
+                core.setSecret(secret);
+                core.info("New secret credential created:");
+                core.info(JSON.stringify(CreateSecret.body));
 
-            const repoSecret = await octokit.rest.actions.createOrUpdateEnvironmentSecret({
-                owner: SetEnvSecretArgs.owner,
-                repo: SetEnvSecretArgs.repo,
-                secret_name: SetEnvSecretArgs.secret_name,
-                environment_name: SetEnvSecretArgs.environment_name,
-                encrypted_value: await SealSecretValue(SetEnvSecretArgs.plainText, pubKeyResponse.data.key),
-                key_id: pubKeyResponse.data.key_id,
-                                headers: {
-                        'X-GitHub-Api-Version': '2022-11-28'
-                    }
-            });            
+                currentSecret = { 
+                    ...Object.fromEntries(Object.entries(CreateSecret.body).filter(([key]) => key !== 'secretText')),               
+                };
+                
+                core.info("Creating or updating GitHub Environment Secret");
+                
+                const octokit = new Octokit({
+                        auth: await fsnxClient.GetAppAuthToken(),
+                        baseUrl: fsnxClient.EventInput.client_payload.api_baseurl,
+                        //userAgent: fsnxClient.EventInput.client_payload.api_userAgent,
+                });
 
+                const octoHeaders = {
+                    'X-GitHub-Api-Version': '2022-11-28',
+                    'user-agent': fsnxClient.EventInput.client_payload.api_userAgent
+                };
 
+                const pubKeyResponse = await octokit.rest.actions.getEnvironmentPublicKey({
+                    owner: SetEnvSecretArgs.owner,
+                    repo: SetEnvSecretArgs.repo,
+                    environment_name: SetEnvSecretArgs.environment_name,
+                    headers: {
+                            ...octoHeaders
+                            }
+                });
 
+                //core.info(JSON.stringify(pubKeyResponse));
+
+                const repoSecret = await octokit.rest.actions.createOrUpdateEnvironmentSecret({
+                    owner: SetEnvSecretArgs.owner,
+                    repo: SetEnvSecretArgs.repo,
+                    secret_name: SetEnvSecretArgs.secret_name,
+                    environment_name: SetEnvSecretArgs.environment_name,
+                    encrypted_value: await SealSecretValue(secret, pubKeyResponse.data.key),
+                    key_id: pubKeyResponse.data.key_id,
+                    headers: {...octoHeaders}
+                });
+
+                core.info("GitHub Environment Secret created or updated:");
+                core.info(JSON.stringify(repoSecret));
+
+            }
+            else 
+            {
+                core.info("Existing secret credential is valid, reusing existing secret");
+            }
             //const upsertEnvSecretResponse = await fsnxClient.CreateOrUpdateEnvironmentSecret(SetEnvSecretArgs);
 
-            const output = { 
-                ...Object.fromEntries(Object.entries(CreateSecret.body).filter(([key]) => key !== 'secretText')),               
-            };
+            currentSecret = { 
+                ...Object.fromEntries(Object.entries(currentSecret).filter(([key]) => key !== 'secretText' && key !== 'customKeyIdentifier' && key !== 'hint'   )),               
+            };            
 
-            fsnxClient.SubmitOutput (output)
+            core.info("Returning current secret credential details:");
+            core.info(JSON.stringify(currentSecret));   
+            fsnxClient.SubmitOutput (currentSecret)
 
     }); 
-
 };
 
 test();
