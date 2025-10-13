@@ -35,22 +35,32 @@ catch (error => {
 async function executeAction (args)
 {
 
-    info("currently running create-power-platform-environment")
+    core.info("currently running create-power-platform-environment")
 
     const fsnxClient = new FsnxApiClient(args);
 
     //core.info(JSON.stringify(fsnxClient.EventInput));
 
-   await fsnxClient.OnStep("<<STEP_NAME>>", async () => {
+    const output = {};
 
-        // Process Actions    
-        const response = await fsnxClient.ExecuteHttpAction("<<ACTION_NAME>>");
+    if (fsnxClient.Actions["get-maker-objectid-by-upn"])
+    {
+        output.maker = await fsnxClient.OnStep("get-maker-objectid-by-upn");
+    }
 
-        const output = {...response.body};
+//    await fsnxClient.OnStep("<<STEP_NAME>>", async () => {
 
-        fsnxClient.SubmitOutput (output)
+//         // Process Actions    
+//         const response = await fsnxClient.ExecuteHttpAction("<<ACTION_NAME>>");
 
-    });
+//         const output = {...response.body};
+
+//         fsnxClient.SubmitOutput (output)
+
+//     });
+
+
+
 
 }
 

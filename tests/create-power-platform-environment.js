@@ -11,6 +11,7 @@ import inputs from '../.testinput/authenticate-cicd-serviceprincipal.json' asser
 // Import required utilities
 import { fileURLToPath } from 'url';
 import { dirname } from 'path';
+import { get } from 'http';
 
 // Convert import.meta.url to a file path
 const __filename = fileURLToPath(import.meta.url);
@@ -36,6 +37,75 @@ const args =
 const test = async () => {
 
     core.info("currently running create-power-platform-environment test");
+
+    const fsnxClient = new FsnxApiClient(args);   
+    
+    await fsnxClient.OnStep("create-power-platform-environment", async () => {
+        
+        const output = {};
+
+        const validateEnvBody = 
+            fsnxClient.Actions["validate-environment-details"].payload.Content.Body;
+
+        const environment = fsnxClient.Actions["create-environment"].payload.Content.Body;
+
+        let checkCount = 0;
+
+        let validateEnvResponse = null;
+
+
+        core.info(`Validating environment details for: ${validateEnvBody.domainName}`);
+        do{
+
+            checkCount++;
+
+            core.info(`Checking environment domain name availability: ${validateEnvBody.domainName}`);
+            validateEnvResponse = await fsnxClient.ExecuteHttpAction("validate-environment-details");
+           if (validateEnvResponse.status == 409) 
+            {
+               validateEnvBody.domainName = `${validateEnvBody.domainName}${checkCount}`;
+            }
+            else
+            {
+                core.info(`Environment domain name "${validateEnvBody.domainName}" is available.`);
+                environment.Properties.LinkedEnvironmentMetadata.DomainName = validateEnvBody.domainName;
+            }
+        } while (validateEnvResponse.status == 409 && checkCount < 10);
+
+        core.info (`Get Maker User ObjectId for: ${fsnxClient.Actions["get-maker-objectid-by-upn"].payload.Content.Body.userPrincipalName}`);
+        if (fsnxClient.Actions["get-maker-objectid-by-upn"])
+        {
+            const getMakerResponse = await fsnxClient.ExecuteHttpAction("get-maker-objectid-by-upn");
+
+            //console.log(getMakerResponse);
+
+            output.maker = getMakerResponse.body;
+            if (getMakerResponse.ok) 
+            {
+                output.maker = getMakerResponse.body;
+                environment.Properties.UsedBy.Id = output.maker.id;
+            }
+            else {
+                // submitting output with error message.
+                output.error = {
+                    code: `${getMakerResponse.status}`,
+                    message: getMakerResponse.statusText
+                };
+                await fsnxClient.SubmitOutput (output);  
+                core.error(getMakerResponse.statusText);
+                throw new Error(`Failed to get maker user objectId: ${getMakerResponse.statusText}`);
+            }
+        }
+ 
+        console.log(fsnxClient.Actions["create-environment"]);
+
+
+        await fsnxClient.SubmitOutput (output);  
+
+
+
+    });
+
 
  
 

@@ -133,7 +133,7 @@ export class FsnxApiClient{
 
     }
 
-    async ExecuteHttpAction (actionName, resourceId)
+    async ExecuteHttpAction (actionName, resourceId, throwIfNotOk = false)
     {
                 const action = this.Actions[actionName];
                 if (!action) throw new Error(`Action not found: ${actionName}`);
@@ -171,17 +171,23 @@ export class FsnxApiClient{
                     ...reqBody
                 });
 
-                //console.log(response);
-
                 const responseBody = {};
-                if (response.body != null)
-                {
-                    responseBody.body = await response.json();
+
+                if (response.body != null) {
+                    // Read response as text first to avoid "Body has already been read" error
+                    const responseText = await response.text();
+                    
+                    // Try to parse as JSON, fallback to text if not valid JSON
+                    try {
+                        responseBody.body = JSON.parse(responseText);
+                    } catch (ex) {
+                        responseBody.body = responseText;
+                    }
                     //console.log(responseJson);
                 }
                 
-                // Check if response is not ok and throw an error
-                if (!response.ok) {
+                // Check if Not OK as well. Check if response is not ok and throw an error
+                if (throwIfNotOk && !response.ok) {
                     const errorMessage = `HTTP ${response.status} ${response.statusText} for ${actionName} at ${reqUri}`;
                     const errorDetails = responseBody.body ? `: ${JSON.stringify(responseBody.body)}` : '';
                     throw new Error(errorMessage + errorDetails);
