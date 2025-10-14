@@ -41992,7 +41992,7 @@ var FsnxApiClient = class {
     }
     return this.#ScopeAuthMap.get(scopeKey);
   }
-  async ExecuteHttpAction(actionName, resourceId) {
+  async ExecuteHttpAction(actionName, resourceId, throwIfNotOk = false) {
     const action = this.Actions[actionName];
     if (!action) throw new Error(`Action not found: ${actionName}`);
     import_core2.default.info(`ExecuteHttpAction: ${actionName}`);
@@ -42019,9 +42019,14 @@ var FsnxApiClient = class {
     );
     const responseBody = {};
     if (response.body != null) {
-      responseBody.body = await response.json();
+      const responseText = await response.text();
+      try {
+        responseBody.body = JSON.parse(responseText);
+      } catch (ex) {
+        responseBody.body = responseText;
+      }
     }
-    if (!response.ok) {
+    if (throwIfNotOk && !response.ok) {
       const errorMessage = `HTTP ${response.status} ${response.statusText} for ${actionName} at ${reqUri}`;
       const errorDetails = responseBody.body ? `: ${JSON.stringify(responseBody.body)}` : "";
       throw new Error(errorMessage + errorDetails);

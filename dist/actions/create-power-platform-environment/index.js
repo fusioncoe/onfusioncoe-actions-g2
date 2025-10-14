@@ -41992,7 +41992,7 @@ var FsnxApiClient = class {
     }
     return this.#ScopeAuthMap.get(scopeKey);
   }
-  async ExecuteHttpAction(actionName, resourceId) {
+  async ExecuteHttpAction(actionName, resourceId, throwIfNotOk = false) {
     const action = this.Actions[actionName];
     if (!action) throw new Error(`Action not found: ${actionName}`);
     import_core2.default.info(`ExecuteHttpAction: ${actionName}`);
@@ -42019,9 +42019,14 @@ var FsnxApiClient = class {
     );
     const responseBody = {};
     if (response.body != null) {
-      responseBody.body = await response.json();
+      const responseText = await response.text();
+      try {
+        responseBody.body = JSON.parse(responseText);
+      } catch (ex) {
+        responseBody.body = responseText;
+      }
     }
-    if (!response.ok) {
+    if (throwIfNotOk && !response.ok) {
       const errorMessage = `HTTP ${response.status} ${response.statusText} for ${actionName} at ${reqUri}`;
       const errorDetails = responseBody.body ? `: ${JSON.stringify(responseBody.body)}` : "";
       throw new Error(errorMessage + errorDetails);
@@ -42161,11 +42166,81 @@ async function DecryptData(encryptedData, pemKey) {
 async function executeAction(args) {
   import_core3.default.info("currently running create-power-platform-environment");
   const fsnxClient = new FsnxApiClient(args);
-  const output = {};
-  if (fsnxClient.Actions["get-maker-objectid-by-upn"]) {
-    output.maker = await fsnxClient.OnStep("get-maker-objectid-by-upn");
-  }
-  fsnxClient.SubmitOutput(output);
+  await fsnxClient.OnStep("create-power-platform-environment", async () => {
+    const output = {};
+    const validateEnvBody = fsnxClient.Actions["validate-environment-details"].payload.Content.Body;
+    const environment = fsnxClient.Actions["create-environment"].payload.Content.Body;
+    let checkCount = 0;
+    let validateEnvResponse = null;
+    import_core3.default.info(`Validating environment details for: ${validateEnvBody.domainName}`);
+    do {
+      checkCount++;
+      import_core3.default.info(`Checking environment domain name availability: ${validateEnvBody.domainName}`);
+      validateEnvResponse = await fsnxClient.ExecuteHttpAction("validate-environment-details");
+      if (validateEnvResponse.status == 409) {
+        validateEnvBody.domainName = `${validateEnvBody.domainName}${checkCount}`;
+      } else {
+        import_core3.default.info(`Environment domain name "${validateEnvBody.domainName}" is available.`);
+        environment.Properties.LinkedEnvironmentMetadata.DomainName = validateEnvBody.domainName;
+      }
+    } while (validateEnvResponse.status == 409 && checkCount < 30);
+    import_core3.default.info(`Get Maker User ObjectId`);
+    if (fsnxClient.Actions["get-maker-objectid-by-upn"]) {
+      const getMakerResponse = await fsnxClient.ExecuteHttpAction("get-maker-objectid-by-upn");
+      output.maker = getMakerResponse.body;
+      if (getMakerResponse.ok) {
+        output.maker = getMakerResponse.body;
+        environment.Properties.UsedBy.Id = output.maker.id;
+      } else {
+        output.error = {
+          code: `${getMakerResponse.status}`,
+          message: getMakerResponse.statusText
+        };
+        await fsnxClient.SubmitOutput(output);
+        import_core3.default.error(getMakerResponse.statusText);
+        throw new Error(`Failed to get maker user objectId: ${getMakerResponse.statusText}`);
+      }
+    }
+    import_core3.default.info(`Creating environment: ${environment.Properties.DisplayName}`);
+    const createEnvResponse = await fsnxClient.ExecuteHttpAction("create-environment");
+    if (createEnvResponse.ok) {
+      output.environmentName = createEnvResponse.headers.get("x-ms-target-environment-name");
+      output.checkStatusUrl = createEnvResponse.headers.get("Location");
+      import_core3.default.info(`Environment creation started: ${output.environmentName}`);
+      import_core3.default.info(`Check status URL: ${output.checkStatusUrl}`);
+      output.environment = environment;
+    } else {
+      output.error = {
+        code: `${createEnvResponse.status}`,
+        message: createEnvResponse.statusText
+      };
+    }
+    await fsnxClient.SubmitOutput(output);
+  });
+  await fsnxClient.OnStep("monitor-create-power-platform-environment", async () => {
+    const output = {};
+    let checkStatusResponse = null;
+    do {
+      import_core3.default.info(`Checking environment creation status: ${fsnxClient.Actions["monitor-create-environment"].payload.RequestUri}`);
+      const checkStatusResponse2 = await fsnxClient.ExecuteHttpAction("monitor-create-environment");
+      if (!checkStatusResponse2.ok) {
+        output.error = {
+          code: `${checkStatusResponse2.status}`,
+          message: checkStatusResponse2.statusText
+        };
+        await fsnxClient.SubmitOutput(output);
+        import_core3.default.error(`Failed to check environment creation status: ${checkStatusResponse2.status} : ${checkStatusResponse2.statusText}`);
+        throw new Error(`Failed to check environment creation status: ${checkStatusResponse2.status} : ${checkStatusResponse2.statusText}`);
+      }
+      if (checkStatusResponse2.status == 200) {
+        output.statusCode = checkStatusResponse2.status;
+        import_core3.default.info(`Environment creation completed successfully.`);
+        break;
+      }
+      console.log(checkStatusResponse2);
+    } while (checkStatusResponse.status == 202);
+    await fsnxClient.SubmitOutput(output);
+  });
 }
 // Annotate the CommonJS export names for ESM import in node:
 0 && (module.exports = {

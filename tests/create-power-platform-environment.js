@@ -70,9 +70,9 @@ const test = async () => {
                 core.info(`Environment domain name "${validateEnvBody.domainName}" is available.`);
                 environment.Properties.LinkedEnvironmentMetadata.DomainName = validateEnvBody.domainName;
             }
-        } while (validateEnvResponse.status == 409 && checkCount < 10);
+        } while (validateEnvResponse.status == 409 && checkCount < 30);
 
-        core.info (`Get Maker User ObjectId for: ${fsnxClient.Actions["get-maker-objectid-by-upn"].payload.Content.Body.userPrincipalName}`);
+        core.info (`Get Maker User ObjectId`);
         if (fsnxClient.Actions["get-maker-objectid-by-upn"])
         {
             const getMakerResponse = await fsnxClient.ExecuteHttpAction("get-maker-objectid-by-upn");
@@ -97,23 +97,73 @@ const test = async () => {
             }
         }
  
-        console.log(fsnxClient.Actions["create-environment"]);
+        //console.log(fsnxClient.Actions["create-environment"].payload.Content.Body);
 
+        core.info (`Creating environment: ${environment.Properties.DisplayName}`);
+        const createEnvResponse = await fsnxClient.ExecuteHttpAction("create-environment");
+
+        if (createEnvResponse.ok)
+        {
+            output.environmentName = createEnvResponse.headers.get("x-ms-target-environment-name");
+            output.checkStatusUrl = createEnvResponse.headers.get("Location");
+            //output.retryAfterSeconds = createEnvResponse.headers.get("Retry-After");
+            core.info(`Environment creation started: ${output.environmentName}`);
+            core.info(`Check status URL: ${output.checkStatusUrl}`);
+            //core.info(`Retry after seconds: ${output.retryAfterSeconds}`);
+            output.environment = environment;
+        }
+        else {
+            // submitting output with error message.
+            output.error = {
+                code: `${createEnvResponse.status}`,
+                message: createEnvResponse.statusText
+            };  
+        }
 
         await fsnxClient.SubmitOutput (output);  
 
+    });
 
+    await fsnxClient.OnStep("monitor-create-power-platform-environment", async () => {
+
+
+        const output = {};
+
+        let checkStatusResponse = null;
+
+        do
+        {
+
+            core.info(`Checking environment creation status: ${fsnxClient.Actions["monitor-create-environment"].payload.RequestUri}`);
+            const checkStatusResponse = await fsnxClient.ExecuteHttpAction("monitor-create-environment");
+
+            if (!checkStatusResponse.ok) {
+                output.error = {
+                    code: `${checkStatusResponse.status}`,
+                    message: checkStatusResponse.statusText
+                };  
+                await fsnxClient.SubmitOutput (output); 
+                core.error(`Failed to check environment creation status: ${checkStatusResponse.status} : ${checkStatusResponse.statusText}`);
+                throw new Error(`Failed to check environment creation status: ${checkStatusResponse.status} : ${checkStatusResponse.statusText}`);
+            }
+            // the create process in complete when a the response body contains a literal string value of "null"
+            if (checkStatusResponse.status == 200) {
+                output.statusCode = checkStatusResponse.status;
+                core.info(`Environment creation completed successfully.`);
+                break;
+            }
+
+            console.log(checkStatusResponse);
+
+        } while (checkStatusResponse.status == 202);
+
+        await fsnxClient.SubmitOutput (output); 
 
     });
 
-
- 
-
-};
+}
 
 test();
-
-
 
 
 
