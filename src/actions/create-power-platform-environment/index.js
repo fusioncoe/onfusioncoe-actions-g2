@@ -66,6 +66,14 @@ async function executeAction (args)
             {
                validateEnvBody.domainName = `${validateEnvBody.domainName}${checkCount}`;
             }
+            else if (!validateEnvResponse.ok){
+                output.error = {
+                    code: `${validateEnvResponse.status}`,
+                    message: validateEnvResponse.body.error.message };
+                await fsnxClient.SubmitOutput (output);  
+                core.error(validateEnvResponse.body.error.message);
+                throw new Error(`Failed to validate environment details: ${validateEnvResponse.status} : ${validateEnvResponse.body.error.message}`);
+            }
             else
             {
                 core.info(`Environment domain name "${validateEnvBody.domainName}" is available.`);
@@ -73,9 +81,12 @@ async function executeAction (args)
             }
         } while (validateEnvResponse.status == 409 && checkCount < 30);
 
-        core.info (`Get Maker User ObjectId`);
+       
         if (fsnxClient.Actions["get-maker-objectid-by-upn"])
         {
+
+            core.info (`Get Maker User ObjectId`);
+
             const getMakerResponse = await fsnxClient.ExecuteHttpAction("get-maker-objectid-by-upn");
 
             //console.log(getMakerResponse);
@@ -90,11 +101,11 @@ async function executeAction (args)
                 // submitting output with error message.
                 output.error = {
                     code: `${getMakerResponse.status}`,
-                    message: getMakerResponse.statusText
+                    message: getMakerResponse.body.error.message
                 };
                 await fsnxClient.SubmitOutput (output);  
-                core.error(getMakerResponse.statusText);
-                throw new Error(`Failed to get maker user objectId: ${getMakerResponse.statusText}`);
+                core.error(getMakerResponse.body.error.message);
+                throw new Error(`Failed to get maker user objectId: ${getMakerResponse.body.error.message}`);
             }
         }
  
@@ -117,8 +128,12 @@ async function executeAction (args)
             // submitting output with error message.
             output.error = {
                 code: `${createEnvResponse.status}`,
-                message: createEnvResponse.statusText
+                message: createEnvResponse.body.error.message,
             };  
+                await fsnxClient.SubmitOutput (output);  
+                core.error(createEnvResponse.body.error.message);
+                core.info (JSON.stringify(createEnvResponse));
+                throw new Error(`Failed to create environment: ${createEnvResponse.status} : ${createEnvResponse.body.error.message}`);            
         }
 
         await fsnxClient.SubmitOutput (output);  
@@ -161,6 +176,7 @@ async function executeAction (args)
         await fsnxClient.SubmitOutput (output); 
 
     });
+
 
 }
 

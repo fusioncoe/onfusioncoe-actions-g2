@@ -12,6 +12,7 @@ import inputs from '../.testinput/authenticate-cicd-serviceprincipal.json' asser
 import { fileURLToPath } from 'url';
 import { dirname } from 'path';
 import { get } from 'http';
+import { json } from 'stream/consumers';
 
 // Convert import.meta.url to a file path
 const __filename = fileURLToPath(import.meta.url);
@@ -40,6 +41,7 @@ const test = async () => {
 
     const fsnxClient = new FsnxApiClient(args);   
     
+
     await fsnxClient.OnStep("create-power-platform-environment", async () => {
         
         const output = {};
@@ -65,6 +67,14 @@ const test = async () => {
             {
                validateEnvBody.domainName = `${validateEnvBody.domainName}${checkCount}`;
             }
+            else if (!validateEnvResponse.ok){
+                output.error = {
+                    code: `${validateEnvResponse.status}`,
+                    message: validateEnvResponse.body.error.message };
+                await fsnxClient.SubmitOutput (output);  
+                core.error(validateEnvResponse.body.error.message);
+                throw new Error(`Failed to validate environment details: ${validateEnvResponse.status} : ${validateEnvResponse.body.error.message}`);
+            }
             else
             {
                 core.info(`Environment domain name "${validateEnvBody.domainName}" is available.`);
@@ -72,9 +82,12 @@ const test = async () => {
             }
         } while (validateEnvResponse.status == 409 && checkCount < 30);
 
-        core.info (`Get Maker User ObjectId`);
+       
         if (fsnxClient.Actions["get-maker-objectid-by-upn"])
         {
+
+            core.info (`Get Maker User ObjectId`);
+
             const getMakerResponse = await fsnxClient.ExecuteHttpAction("get-maker-objectid-by-upn");
 
             //console.log(getMakerResponse);
@@ -89,11 +102,11 @@ const test = async () => {
                 // submitting output with error message.
                 output.error = {
                     code: `${getMakerResponse.status}`,
-                    message: getMakerResponse.statusText
+                    message: getMakerResponse.body.error.message
                 };
                 await fsnxClient.SubmitOutput (output);  
-                core.error(getMakerResponse.statusText);
-                throw new Error(`Failed to get maker user objectId: ${getMakerResponse.statusText}`);
+                core.error(getMakerResponse.body.error.message);
+                throw new Error(`Failed to get maker user objectId: ${getMakerResponse.body.error.message}`);
             }
         }
  
@@ -116,8 +129,12 @@ const test = async () => {
             // submitting output with error message.
             output.error = {
                 code: `${createEnvResponse.status}`,
-                message: createEnvResponse.statusText
+                message: createEnvResponse.body.error.message,
             };  
+                await fsnxClient.SubmitOutput (output);  
+                core.error(createEnvResponse.body.error.message);
+                core.info (JSON.stringify(createEnvResponse));
+                throw new Error(`Failed to create environment: ${createEnvResponse.status} : ${createEnvResponse.body.error.message}`);            
         }
 
         await fsnxClient.SubmitOutput (output);  
@@ -160,6 +177,7 @@ const test = async () => {
         await fsnxClient.SubmitOutput (output); 
 
     });
+
 
 }
 

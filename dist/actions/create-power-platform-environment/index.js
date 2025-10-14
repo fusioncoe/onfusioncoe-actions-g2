@@ -42179,13 +42179,21 @@ async function executeAction(args) {
       validateEnvResponse = await fsnxClient.ExecuteHttpAction("validate-environment-details");
       if (validateEnvResponse.status == 409) {
         validateEnvBody.domainName = `${validateEnvBody.domainName}${checkCount}`;
+      } else if (!validateEnvResponse.ok) {
+        output.error = {
+          code: `${validateEnvResponse.status}`,
+          message: validateEnvResponse.body.error.message
+        };
+        await fsnxClient.SubmitOutput(output);
+        import_core3.default.error(validateEnvResponse.body.error.message);
+        throw new Error(`Failed to validate environment details: ${validateEnvResponse.status} : ${validateEnvResponse.body.error.message}`);
       } else {
         import_core3.default.info(`Environment domain name "${validateEnvBody.domainName}" is available.`);
         environment.Properties.LinkedEnvironmentMetadata.DomainName = validateEnvBody.domainName;
       }
     } while (validateEnvResponse.status == 409 && checkCount < 30);
-    import_core3.default.info(`Get Maker User ObjectId`);
     if (fsnxClient.Actions["get-maker-objectid-by-upn"]) {
+      import_core3.default.info(`Get Maker User ObjectId`);
       const getMakerResponse = await fsnxClient.ExecuteHttpAction("get-maker-objectid-by-upn");
       output.maker = getMakerResponse.body;
       if (getMakerResponse.ok) {
@@ -42194,11 +42202,11 @@ async function executeAction(args) {
       } else {
         output.error = {
           code: `${getMakerResponse.status}`,
-          message: getMakerResponse.statusText
+          message: getMakerResponse.body.error.message
         };
         await fsnxClient.SubmitOutput(output);
-        import_core3.default.error(getMakerResponse.statusText);
-        throw new Error(`Failed to get maker user objectId: ${getMakerResponse.statusText}`);
+        import_core3.default.error(getMakerResponse.body.error.message);
+        throw new Error(`Failed to get maker user objectId: ${getMakerResponse.body.error.message}`);
       }
     }
     import_core3.default.info(`Creating environment: ${environment.Properties.DisplayName}`);
@@ -42212,8 +42220,12 @@ async function executeAction(args) {
     } else {
       output.error = {
         code: `${createEnvResponse.status}`,
-        message: createEnvResponse.statusText
+        message: createEnvResponse.body.error.message
       };
+      await fsnxClient.SubmitOutput(output);
+      import_core3.default.error(createEnvResponse.body.error.message);
+      import_core3.default.info(JSON.stringify(createEnvResponse));
+      throw new Error(`Failed to create environment: ${createEnvResponse.status} : ${createEnvResponse.body.error.message}`);
     }
     await fsnxClient.SubmitOutput(output);
   });
