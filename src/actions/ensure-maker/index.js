@@ -41,16 +41,16 @@ async function executeAction (args)
 
     //core.info(JSON.stringify(fsnxClient.EventInput));
 
-   await fsnxClient.OnStep("<<STEP_NAME>>", async () => {
+   await fsnxClient.OnStep("get-maker-info", async () => {
 
         // Process Actions    
-        const response = await fsnxClient.ExecuteHttpAction("<<ACTION_NAME>>");
+        const response = await fsnxClient.ExecuteHttpAction("get-user");
 
         const output = {...response.body};
 
         fsnxClient.SubmitOutput (output)
 
-    });
+    }); 
 
 }
 
