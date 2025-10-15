@@ -41,7 +41,7 @@ const test = async () => {
 
     //core.info(JSON.stringify(fsnxClient.EventInput));
 
-   await fsnxClient.OnStep("get-enviornment-details", async () => {
+   await fsnxClient.OnStep("get-environment-details", async () => {
 
         // Process Actions    
         const response = await fsnxClient.ExecuteHttpAction("get-environment");

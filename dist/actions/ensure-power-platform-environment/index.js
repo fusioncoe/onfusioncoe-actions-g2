@@ -42166,8 +42166,8 @@ async function DecryptData(encryptedData, pemKey) {
 async function executeAction(args) {
   import_core3.default.info("currently running ensure-power-platform-environment");
   const fsnxClient = new FsnxApiClient(args);
-  await fsnxClient.OnStep("<<STEP_NAME>>", async () => {
-    const response = await fsnxClient.ExecuteHttpAction("<<ACTION_NAME>>");
+  await fsnxClient.OnStep("get-environment-details", async () => {
+    const response = await fsnxClient.ExecuteHttpAction("get-environment");
     const output = { ...response.body };
     fsnxClient.SubmitOutput(output);
   });
