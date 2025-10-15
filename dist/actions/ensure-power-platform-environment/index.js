@@ -42166,6 +42166,11 @@ async function DecryptData(encryptedData, pemKey) {
 async function executeAction(args) {
   import_core3.default.info("currently running ensure-power-platform-environment");
   const fsnxClient = new FsnxApiClient(args);
+  await fsnxClient.OnStep("get-environment-details", async () => {
+    const response = await fsnxClient.ExecuteHttpAction("get-environment");
+    const output = { ...response.body };
+    fsnxClient.SubmitOutput(output);
+  });
   await fsnxClient.OnStep("get-dataverse-details", async () => {
     const output = {};
     const orgResponse = await fsnxClient.ExecuteHttpAction("get-organization-id");
