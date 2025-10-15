@@ -1,4 +1,4 @@
-// ensure-power-platform-environment - Test Script
+// ensure-maker - Test Script
 
 import fs from 'fs';
 import core from '@actions/core';
@@ -24,7 +24,7 @@ console.log(privateKeyPath);
 
 const privateKeyPem = fs.readFileSync(privateKeyPath, 'utf8');
 
-const event_path = path.resolve(`${__dirname}\\..\\.testinput\\ensure-power-platform-environment.json`);
+const event_path = path.resolve(`${__dirname}\\..\\.testinput\\ensure-maker.json`);
 
 const args = 
 {
@@ -35,16 +35,16 @@ const args =
 
 const test = async () => {
 
-    core.info("currently running ensure-power-platform-environment test");
+    core.info("currently running ensure-maker test");
 
     const fsnxClient = new FsnxApiClient(args);
 
     //core.info(JSON.stringify(fsnxClient.EventInput));
 
-   await fsnxClient.OnStep("get-enviornment-details", async () => {
+   await fsnxClient.OnStep("<<STEP_NAME>>", async () => {
 
         // Process Actions    
-        const response = await fsnxClient.ExecuteHttpAction("get-environment");
+        const response = await fsnxClient.ExecuteHttpAction("<<ACTION_NAME>>");
 
         const output = {...response.body};
 
