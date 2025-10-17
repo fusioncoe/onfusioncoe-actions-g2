@@ -251,8 +251,8 @@ const test = async () => {
             const currentSecretsResponse = await fsnxClient.ExecuteHttpAction(`get-current-secrets-${i}`);
             if (currentSecretsResponse.ok)
             {
-                const secrets = currentSecretsResponse.body.value || [];
-
+                const secrets = currentSecretsResponse.body.passwordCredentials || [];
+                
                 currentSecret = secrets.find(cred => cred.keyId === currentSecretKeyId);
 
                 if (currentSecret)
@@ -288,6 +288,8 @@ const test = async () => {
                     
                     const secret  = createSecretResponse.body.secretText;
                     core.setSecret(secret);
+
+
 
                     connectionOutput.credential = { 
                         ...Object.fromEntries(Object.entries(createSecretResponse.body).filter(([key]) => key !== 'secretText')),

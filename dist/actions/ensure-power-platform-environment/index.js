@@ -42228,6 +42228,141 @@ async function executeAction(args) {
     import_core3.default.info(JSON.stringify(output));
     await fsnxClient.SubmitOutput(output);
   });
+  await fsnxClient.OnStep("ensure-dataverse-connections", async () => {
+    const output = { DataverseConnections: [] };
+    const environmentName = fsnxClient.Actions["ensure-dataverse-info"].payload.environment_name;
+    let i = 1;
+    while (fsnxClient.Actions[`get-app-user-${i}`]) {
+      const connectionOutput = {};
+      output.DataverseConnections.push(connectionOutput);
+      const currentSecretDetails = fsnxClient.Actions[`current-connection-secret-details-${i}`].payload;
+      const currentSecretKeyId = currentSecretDetails.secret_id;
+      const expirationCheckDate = currentSecretDetails.expiration_check_date;
+      const appName = currentSecretDetails.app_name;
+      connectionOutput.fusionex_managedconnectorconnectionid = currentSecretDetails.fusionex_managedconnectorconnectionid;
+      connectionOutput.fusionex_azureappregistrationcredentialid = currentSecretDetails.fusionex_azureappregistrationcredentialid;
+      import_core3.default.info(`Processing Application User and Dataverse Connection for App ${appName} in Environment ${environmentName}`);
+      let appUserId = null;
+      const getAppUserResponse = await fsnxClient.ExecuteHttpAction(`get-app-user-${i}`);
+      if (getAppUserResponse.ok) {
+        if (getAppUserResponse.body.value.length > 0) {
+          appUserId = getAppUserResponse.body.value[0].systemuserid;
+          import_core3.default.info(`Found App User with ID: ${appUserId}`);
+        }
+      } else {
+        output.error = {
+          code: getAppUserResponse.status,
+          message: getAppUserResponse.body.error.message
+        };
+        await fsnxClient.SubmitOutput(output);
+        import_core3.default.error(getAppUserResponse.body.error.message);
+        throw new Error(`Failed to retrieve App User ID: ${getAppUserResponse.status} : ${getAppUserResponse.body.error.message}`);
+      }
+      if (!appUserId) {
+        const createAppUserResponse = await fsnxClient.ExecuteHttpAction(`create-app-user-${i}`);
+        if (createAppUserResponse.ok) {
+          const entityIdHeader = createAppUserResponse.headers.get("OData-EntityId") || createAppUserResponse.headers.get("odata-entityid");
+          appUserId = entityIdHeader ? entityIdHeader.split("(")[1].split(")")[0] : null;
+          import_core3.default.info(`Created App User with ID: ${appUserId}`);
+        } else {
+          output.error = {
+            code: createAppUserResponse.status,
+            message: createAppUserResponse.body.error.message
+          };
+          await fsnxClient.SubmitOutput(output);
+          import_core3.default.error(createAppUserResponse.body.error.message);
+          throw new Error(`Failed to create App User ID: ${createAppUserResponse.status} : ${createAppUserResponse.body.error.message}`);
+        }
+      }
+      if (appUserId) {
+        const assignRoleResponse = await fsnxClient.ExecuteHttpAction(`assign-system-admin-role-${i}`, appUserId);
+        if (assignRoleResponse.ok) {
+          import_core3.default.info(`Assigned System Admin Role to App User with ID: ${appUserId}`);
+        } else {
+          output.error = {
+            code: assignRoleResponse.status,
+            message: assignRoleResponse.body.error.message
+          };
+          await fsnxClient.SubmitOutput(output);
+          import_core3.default.error(assignRoleResponse.body.error.message);
+          throw new Error(`Failed to assign System Admin Role to App User ID: ${assignRoleResponse.status} : ${assignRoleResponse.body.error.message}`);
+        }
+        const assignCustomRoleResponse = await fsnxClient.ExecuteHttpAction(`assign-system-customizer-role-${i}`, appUserId);
+        if (assignCustomRoleResponse.ok) {
+          import_core3.default.info(`Assigned System Customizer Role to App User with ID: ${appUserId}`);
+        } else {
+          output.error = {
+            code: assignCustomRoleResponse.status,
+            message: assignCustomRoleResponse.body.error.message
+          };
+          await fsnxClient.SubmitOutput(output);
+          import_core3.default.error(assignCustomRoleResponse.body.error.message);
+          throw new Error(`Failed to assign System Customizer Role to App User ID: ${assignCustomRoleResponse.status} : ${assignCustomRoleResponse.body.error.message}`);
+        }
+      }
+      let currentSecret = null;
+      const currentSecretsResponse = await fsnxClient.ExecuteHttpAction(`get-current-secrets-${i}`);
+      if (currentSecretsResponse.ok) {
+        const secrets = currentSecretsResponse.body.passwordCredentials || [];
+        currentSecret = secrets.find((cred) => cred.keyId === currentSecretKeyId);
+        if (currentSecret) {
+          connectionOutput.credential = currentSecret;
+          import_core3.default.info(`Current Secret for App ${appName} in Environment ${environmentName}: ${JSON.stringify(currentSecret)}`);
+        } else {
+          import_core3.default.info(`No Current Secret found for App ${appName} in Environment ${environmentName}`);
+        }
+      } else {
+        output.error = {
+          code: currentSecretsResponse.status,
+          message: currentSecretsResponse.body.error.message
+        };
+        await fsnxClient.SubmitOutput(output);
+        import_core3.default.error(currentSecretsResponse.body.error.message);
+        throw new Error(`Failed to get Current Secrets for App ${appName} : ${currentSecretsResponse.status} : ${currentSecretsResponse.body.error.message}`);
+      }
+      const connectionBodyProperties = fsnxClient.Actions[`create-update-connection-${i}`].payload.Content.Body.properties;
+      const connectionTokenParams = connectionBodyProperties.connectionParametersSet.values;
+      if (currentSecret == null || currentSecret === void 0 || currentSecret.endDateTime < expirationCheckDate) {
+        import_core3.default.info(`Creating new secret credential for App ${appName} in Environment ${environmentName}`);
+        const createSecretResponse = await fsnxClient.ExecuteHttpAction(`create-secret-credential-${i}`);
+        if (createSecretResponse.ok) {
+          const secret = createSecretResponse.body.secretText;
+          import_core3.default.setSecret(secret);
+          connectionOutput.credential = {
+            ...Object.fromEntries(Object.entries(createSecretResponse.body).filter(([key]) => key !== "secretText"))
+          };
+          connectionTokenParams["token:clientSecret"].value = secret;
+          import_core3.default.info("New secret credential created:");
+          import_core3.default.info(JSON.stringify(createSecretResponse.body));
+        } else {
+          output.error = {
+            code: createSecretResponse.status,
+            message: createSecretResponse.body.error.message
+          };
+          await fsnxClient.SubmitOutput(output);
+          import_core3.default.error(createSecretResponse.body.error.message);
+          throw new Error(`Failed to create Secret Credential for App ${appName} in Environment ${environmentName}: ${createSecretResponse.status} : ${createSecretResponse.body.error.message}`);
+        }
+      } else {
+        delete connectionBodyProperties["connectionParametersSet"];
+      }
+      const createUpdateConnectionResponse = await fsnxClient.ExecuteHttpAction(`create-update-connection-${i}`);
+      if (createUpdateConnectionResponse.ok) {
+        import_core3.default.info(`Created or Updated Connection for App ${appName} in Environment ${environmentName}: ${createUpdateConnectionResponse.body.name}`);
+        connectionOutput.connection = createUpdateConnectionResponse.body;
+      } else {
+        output.error = {
+          code: createUpdateConnectionResponse.status,
+          message: createUpdateConnectionResponse.body.error.message
+        };
+        await fsnxClient.SubmitOutput(output);
+        import_core3.default.error(createUpdateConnectionResponse.body.error.message);
+        throw new Error(`Failed to create or update Connection for App ${appName} in Environment ${environmentName}: ${createUpdateConnectionResponse.status} : ${createUpdateConnectionResponse.body.error.message}`);
+      }
+      i++;
+    }
+    await fsnxClient.SubmitOutput(output);
+  });
 }
 // Annotate the CommonJS export names for ESM import in node:
 0 && (module.exports = {
