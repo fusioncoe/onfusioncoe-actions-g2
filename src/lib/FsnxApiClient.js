@@ -182,7 +182,7 @@ export class FsnxApiClient{
                         responseBody.body = JSON.parse(responseText);
                     } catch (ex) {
                         responseBody.body = responseText;
-                    }
+                    }                           
                     //console.log(responseJson);
                 }
                 
