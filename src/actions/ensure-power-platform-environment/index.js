@@ -160,14 +160,15 @@ async function executeAction (args)
 
             let appUserId = null;
 
-            const getAppUserResponse = await fsnxClient.ExecuteHttpAction(`get-app-user-${i}`);
+            const getAppUserResponse = await fsnxClient.ExecuteHttpActionV2({actionName: `get-app-user-${i}`});
             if (getAppUserResponse.ok){
                 if (getAppUserResponse.body.value.length > 0)
                 {
                     appUserId = getAppUserResponse.body.value[0].systemuserid;
                     core.info(`Found App User with ID: ${appUserId}`);
                 }
-            }else
+            }
+            else
             {
                 output.error = {
                     code: getAppUserResponse.status,
@@ -276,7 +277,8 @@ async function executeAction (args)
                 throw new Error(`Failed to get Current Secrets for App ${appName} : ${currentSecretsResponse.status} : ${currentSecretsResponse.body.error.message}`);
             }
 
-            const connectionBodyProperties = fsnxClient.Actions[`create-update-connection-${i}`].payload.Content.Body.properties;
+            const connectionBody = fsnxClient.Actions[`create-update-connection-${i}`].payload.Content.Body;
+            const connectionBodyProperties = connectionBody.properties;
             const connectionTokenParams = connectionBodyProperties.connectionParametersSet.values;
 
             if (currentSecret == null || currentSecret === undefined || currentSecret.endDateTime < expirationCheckDate){
@@ -287,9 +289,9 @@ async function executeAction (args)
                 {
                     
                     const secret  = createSecretResponse.body.secretText;
-                    core.setSecret(secret);
-
-
+                    const secretKeyId = createSecretResponse.body.keyId;
+                    // cannot log secret value because it needs to be used to create/update the connection.
+                    //core.setSecret(secret);
 
                     connectionOutput.credential = { 
                         ...Object.fromEntries(Object.entries(createSecretResponse.body).filter(([key]) => key !== 'secretText')),
@@ -297,9 +299,12 @@ async function executeAction (args)
                     
                     connectionTokenParams["token:clientSecret"].value = secret;
                     core.info("New secret credential created:");
-                    core.info(JSON.stringify(createSecretResponse.body));
+                    core.info(JSON.stringify(connectionOutput.credential));
 
-                }else
+                    
+
+                }
+                else
                 {
                     output.error = {
                         code: createSecretResponse.status,
@@ -317,28 +322,109 @@ async function executeAction (args)
 
             // Create or Update the Connection
 
-            core.info(`Connection Token Parameters for App ${appName} in Environment ${environmentName}`)
-            core.info(JSON.stringify(connectionTokenParams));
+            //core.info(`Connection body for App ${appName} in Environment ${environmentName}`)
+            //core.info(JSON.stringify(connectionBody));            
 
-            const createUpdateConnectionResponse = await fsnxClient.ExecuteHttpAction(`create-update-connection-${i}`);
+            const createUpdateConnectionResponse = await fsnxClient.ExecuteHttpActionV2({actionName: `create-update-connection-${i}`});
             if (createUpdateConnectionResponse.ok)
             {
                 core.info(`Created or Updated Connection for App ${appName} in Environment ${environmentName}: ${createUpdateConnectionResponse.body.name}`);
                 core.info(JSON.stringify(createUpdateConnectionResponse));
-
                 connectionOutput.connection = createUpdateConnectionResponse.body;
             }
             else{
                 output.error = {
                     code: createUpdateConnectionResponse.status,
-                    message: createUpdateConnectionResponse.body.error.message
+                    message: createUpdateConnectionResponse.body.message
                 };
                 await fsnxClient.SubmitOutput (output);
-                core.error(createUpdateConnectionResponse.body.error.message);
-                throw new Error(`Failed to create or update Connection for App ${appName} in Environment ${environmentName}: ${createUpdateConnectionResponse.status} : ${createUpdateConnectionResponse.body.error.message}`);
+                core.error(createUpdateConnectionResponse.body.message);
+                throw new Error(`Failed to create or update Connection for App ${appName} in Environment ${environmentName}: ${createUpdateConnectionResponse.status} : ${createUpdateConnectionResponse.body.message}`);
+            }
+
+            // get-connection-permissions
+
+            const permissionUpdate = fsnxClient.Actions[`update-connection-permissions-${i}`].payload.Content.Body;
+
+            const getConnectionPermissionsResponse = await fsnxClient.ExecuteHttpAction(`get-connection-permissions-${i}`);
+            if (getConnectionPermissionsResponse.ok)
+            {   
+
+               // console.log(JSON.stringify(getConnectionPermissionsResponse.body));
+
+                    core.info(`Retrieved Current Connection Permissions for App ${appName} in Environment ${environmentName}: ${JSON.stringify(getConnectionPermissionsResponse.body)}`);
+                    const currentPermissions = getConnectionPermissionsResponse.body;
+
+                    // Delete existing permissions that are not in the desired set
+                    currentPermissions.value.forEach((value,index,array) =>{
+                        if (value.properties.roleName !== "Owner" &&
+                            !permissionUpdate.put.filter(item => item.properties.principal.id === value.properties.principal.id).length > 0 )
+                        {
+                            core.info(`Removing Permission for Principal ${value.properties.principal.id}`);
+                            if (permissionUpdate.delete == null)
+                            {
+                                permissionUpdate.delete = [];
+                            }
+                            permissionUpdate.delete.push({
+                                id: value.id,
+                            });
+                        }
+                    });
+
+            }
+            else
+            {
+                console.log(JSON.stringify(getConnectionPermissionsResponse));
+                output.error = {
+                    code: getConnectionPermissionsResponse.status,
+                    message: getConnectionPermissionsResponse.body.message
+                };
+                await fsnxClient.SubmitOutput (output);
+                core.error(getConnectionPermissionsResponse.body.message);
+                throw new Error(`Failed to get Connection Permissions for App ${appName} in Environment ${environmentName}: ${getConnectionPermissionsResponse.status} : ${getConnectionPermissionsResponse.body.message}`);
+            }   
+
+            // Update Connection Permissions
+
+            const updateConnectionPermissionsResponse = await fsnxClient.ExecuteHttpAction(`update-connection-permissions-${i}`);
+            console.log(JSON.stringify(updateConnectionPermissionsResponse));
+            if (updateConnectionPermissionsResponse.ok)
+            {
+                core.info(`Updated Connection Permissions for App ${appName} in Environment ${environmentName}`);
+                connectionOutput.connectionPermissions = updateConnectionPermissionsResponse.body;
+            }
+            else
+            {
+                output.error = {
+                    code: updateConnectionPermissionsResponse.status,
+                    message: updateConnectionPermissionsResponse.body.message
+                };
+                await fsnxClient.SubmitOutput(output);
+                core.error(updateConnectionPermissionsResponse.body.message);
+                throw new Error(`Failed to update Connection Permissions for App ${appName} in Environment ${environmentName}: ${updateConnectionPermissionsResponse.status} : ${updateConnectionPermissionsResponse.body.message}`);
             }
 
 
+            // Rerunning create if token status is not ready
+            let tokenStatus = createUpdateConnectionResponse.body.properties.statuses.find(status => status.target === "token");
+            let retryCount = 0;
+            const maxRetries = 10;
+            const retryDelayMs = 10000; // 10 seconds
+
+            while (tokenStatus && tokenStatus.status == "Error" && retryCount < maxRetries)
+            {
+                core.info(`Token status is Error.  This is expected as it takes time for the new secret to propagate. Retrying create connection attempt ${retryCount + 1} of ${maxRetries} after ${retryDelayMs / 1000} seconds.`);
+                await delay(retryDelayMs);
+                const retryCreateUpdateConnectionResponse = await fsnxClient.ExecuteHttpAction(`create-update-connection-${i}`);
+                if (retryCreateUpdateConnectionResponse.ok) {
+                    connectionOutput.connection = retryCreateUpdateConnectionResponse.body;
+                    tokenStatus = retryCreateUpdateConnectionResponse.body.properties.statuses.find(status => status.target === "token");
+                } else {
+                    core.error(`Failed to retry create/update connection: ${retryCreateUpdateConnectionResponse.status} : ${retryCreateUpdateConnectionResponse.body.message}`);
+                    break;
+                }
+                retryCount++;
+            }
 
             i++;
         }
@@ -347,7 +433,6 @@ async function executeAction (args)
             await fsnxClient.SubmitOutput(output);
         
     });
-
 
 
 }

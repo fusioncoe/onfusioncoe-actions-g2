@@ -4,7 +4,9 @@ import fs from 'fs';
 import core from '@actions/core';
 import path from 'path';
 
-import { FsnxApiClient } from '../src/lib/FsnxApiClient.js';
+//import HttpsProxyAgent from 'https-proxy-agent';
+
+import { FsnxApiClient, delay } from '../src/lib/FsnxApiClient.js';
 
 import inputs from '../.testinput/authenticate-cicd-serviceprincipal.json' assert { type: 'json' };
 
@@ -12,6 +14,18 @@ import inputs from '../.testinput/authenticate-cicd-serviceprincipal.json' asser
 import { fileURLToPath } from 'url';
 import { dirname } from 'path';
 import { json } from 'stream/consumers';
+import url from 'url';
+
+const fiddlerProxy = 'http://127.0.0.1:8888';
+
+
+// const setFiddlerProxy = () => {
+//     var proxyUrl = url.format(fiddlerProxyOptions);
+
+// };
+
+// Use this only for debugging as it introduces a security issue.
+process.env.NODE_TLS_REJECT_UNAUTHORIZED = 0;
 
 // Convert import.meta.url to a file path
 const __filename = fileURLToPath(import.meta.url);
@@ -161,14 +175,15 @@ const test = async () => {
 
             let appUserId = null;
 
-            const getAppUserResponse = await fsnxClient.ExecuteHttpAction(`get-app-user-${i}`);
+            const getAppUserResponse = await fsnxClient.ExecuteHttpActionV2({actionName: `get-app-user-${i}`});
             if (getAppUserResponse.ok){
                 if (getAppUserResponse.body.value.length > 0)
                 {
                     appUserId = getAppUserResponse.body.value[0].systemuserid;
                     core.info(`Found App User with ID: ${appUserId}`);
                 }
-            }else
+            }
+            else
             {
                 output.error = {
                     code: getAppUserResponse.status,
@@ -277,7 +292,8 @@ const test = async () => {
                 throw new Error(`Failed to get Current Secrets for App ${appName} : ${currentSecretsResponse.status} : ${currentSecretsResponse.body.error.message}`);
             }
 
-            const connectionBodyProperties = fsnxClient.Actions[`create-update-connection-${i}`].payload.Content.Body.properties;
+            const connectionBody = fsnxClient.Actions[`create-update-connection-${i}`].payload.Content.Body;
+            const connectionBodyProperties = connectionBody.properties;
             const connectionTokenParams = connectionBodyProperties.connectionParametersSet.values;
 
             if (currentSecret == null || currentSecret === undefined || currentSecret.endDateTime < expirationCheckDate){
@@ -288,9 +304,9 @@ const test = async () => {
                 {
                     
                     const secret  = createSecretResponse.body.secretText;
-                    core.setSecret(secret);
-
-
+                    const secretKeyId = createSecretResponse.body.keyId;
+                    // cannot log secret value because it needs to be used to create/update the connection.
+                    //core.setSecret(secret);
 
                     connectionOutput.credential = { 
                         ...Object.fromEntries(Object.entries(createSecretResponse.body).filter(([key]) => key !== 'secretText')),
@@ -298,9 +314,12 @@ const test = async () => {
                     
                     connectionTokenParams["token:clientSecret"].value = secret;
                     core.info("New secret credential created:");
-                    core.info(JSON.stringify(createSecretResponse.body));
+                    core.info(JSON.stringify(connectionOutput.credential));
 
-                }else
+                    
+
+                }
+                else
                 {
                     output.error = {
                         code: createSecretResponse.status,
@@ -318,7 +337,10 @@ const test = async () => {
 
             // Create or Update the Connection
 
-            const createUpdateConnectionResponse = await fsnxClient.ExecuteHttpAction(`create-update-connection-${i}`);
+            //core.info(`Connection body for App ${appName} in Environment ${environmentName}`)
+            //core.info(JSON.stringify(connectionBody));            
+
+            const createUpdateConnectionResponse = await fsnxClient.ExecuteHttpActionV2({actionName: `create-update-connection-${i}`});
             if (createUpdateConnectionResponse.ok)
             {
                 core.info(`Created or Updated Connection for App ${appName} in Environment ${environmentName}: ${createUpdateConnectionResponse.body.name}`);
@@ -397,6 +419,28 @@ const test = async () => {
                 throw new Error(`Failed to update Connection Permissions for App ${appName} in Environment ${environmentName}: ${updateConnectionPermissionsResponse.status} : ${updateConnectionPermissionsResponse.body.message}`);
             }
 
+
+            // Rerunning create if token status is not ready
+            let tokenStatus = createUpdateConnectionResponse.body.properties.statuses.find(status => status.target === "token");
+            let retryCount = 0;
+            const maxRetries = 10;
+            const retryDelayMs = 10000; // 10 seconds
+
+            while (tokenStatus && tokenStatus.status == "Error" && retryCount < maxRetries)
+            {
+                core.info(`Token status is Error.  This is expected as it takes time for the new secret to propagate. Retrying create connection attempt ${retryCount + 1} of ${maxRetries} after ${retryDelayMs / 1000} seconds.`);
+                await delay(retryDelayMs);
+                const retryCreateUpdateConnectionResponse = await fsnxClient.ExecuteHttpAction(`create-update-connection-${i}`);
+                if (retryCreateUpdateConnectionResponse.ok) {
+                    connectionOutput.connection = retryCreateUpdateConnectionResponse.body;
+                    tokenStatus = retryCreateUpdateConnectionResponse.body.properties.statuses.find(status => status.target === "token");
+                } else {
+                    core.error(`Failed to retry create/update connection: ${retryCreateUpdateConnectionResponse.status} : ${retryCreateUpdateConnectionResponse.body.message}`);
+                    break;
+                }
+                retryCount++;
+            }
+
             i++;
         }
 
@@ -406,8 +450,10 @@ const test = async () => {
     });
 
 
+}
 
-};
+
+
 
 test();
 

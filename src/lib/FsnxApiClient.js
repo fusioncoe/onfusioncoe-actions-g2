@@ -5,6 +5,7 @@
 import * as msal from "@azure/msal-node";
 import crypto from 'crypto';
 import { Octokit } from '@octokit/rest';
+//import * as https from 'https';
 //import NodeRSA from "node-rsa";
 //import nacl from 'tweetnacl';
 //import { blake2b } from 'blakejs';
@@ -12,6 +13,9 @@ import { Octokit } from '@octokit/rest';
 //import {sodium} from 'tweetsodium';
 
 import libsodium from "libsodium-wrappers";
+import {HttpsProxyAgent} from 'https-proxy-agent';
+import {HttpProxyAgent} from 'http-proxy-agent';
+import fetch from 'node-fetch';
 
 
 import fs from 'fs';
@@ -135,6 +139,11 @@ export class FsnxApiClient{
 
     async ExecuteHttpAction (actionName, resourceId, throwIfNotOk = false)
     {
+           return this.ExecuteHttpActionV2 ({actionName, resourceId, throwIfNotOk});
+    }
+
+    async ExecuteHttpActionV2 ({actionName, resourceId, throwIfNotOk = false, debug = false, proxy} = {})
+    {
                 const action = this.Actions[actionName];
                 if (!action) throw new Error(`Action not found: ${actionName}`);
 
@@ -163,27 +172,64 @@ export class FsnxApiClient{
                 
                 //console.log(reqBody);
 
-                const response = await fetch(reqUri, 
-                {
-                    credentials: "include",
+                // remove fusionex-dispatch-action from payload headers if present
+                const payloadHeaders = {...a_payload?.Content?.Headers ?? {}, ...a_payload?.Headers ?? {}};
+                if (payloadHeaders['fusionex-dispatch-action']) {
+                    delete payloadHeaders['fusionex-dispatch-action'];
+                }
+
+                // Create a custom headers object that excludes automatic headers
+                const customHeaders = {
+                    ...payloadHeaders,
+                    ...auth
+                };
+
+                const requestOptions = {
                     method: a_payload.Method,
-                    headers: {...a_payload?.Content?.Headers ?? {}, ...a_payload?.Headers ?? {}, ...auth},
-                    ...reqBody
-                });
+                    headers: customHeaders,
+                    ...reqBody,
+                    //compress: false // Prevents Accept-Encoding from being automatically added
+                };
 
-                const responseBody = {};
-
-                if (response.body != null) {
-                    // Read response as text first to avoid "Body has already been read" error
-                    const responseText = await response.text();
+                // Add proxy agent if specified
+                if (proxy) {
+                    const targetUrl = new URL(reqUri);
+                    if (targetUrl.protocol === 'https:') {
+                        requestOptions.agent = new HttpsProxyAgent(proxy);
+                    } else {
+                        requestOptions.agent = new HttpProxyAgent(proxy);
+                    }
                     
-                    // Try to parse as JSON, fallback to text if not valid JSON
+                    if (debug) {
+                        core.info(`Using proxy: ${proxy}`);
+                        core.info(`Using node-fetch with ${targetUrl.protocol === 'https:' ? 'HTTPS' : 'HTTP'} proxy agent`);
+                    }
+                }
+
+                if (debug) {
+                    core.info(`Request URI: ${reqUri}`);
+                    core.info(`Request Method: ${a_payload.Method}`);
+                    core.info(`Request Headers: ${JSON.stringify(requestOptions.headers)}`);
+                    core.info(`Request Body: ${reqBody.body ?? "No Body"}`);
+                    core.info(`Using proxy: ${proxy ? 'Yes' : 'No'}`);
+                }
+
+                // Make the HTTP request using node-fetch
+                const response = await fetch(reqUri, requestOptions);
+
+                // node-fetch response handling
+                const responseBody = {};
+                
+                // Read response body
+                const responseText = await response.text();
+                
+                // Try to parse as JSON, fallback to text if not valid JSON
+                if (responseText) {
                     try {
                         responseBody.body = JSON.parse(responseText);
                     } catch (ex) {
                         responseBody.body = responseText;
-                    }                           
-                    //console.log(responseJson);
+                    }
                 }
                 
                 // Check if Not OK as well. Check if response is not ok and throw an error
@@ -201,7 +247,7 @@ export class FsnxApiClient{
                             ...responseBody
                         }
 
-    }
+    }    
 
     async  SubmitOutput (output)
     {
@@ -382,11 +428,15 @@ async function DecryptData(encryptedData, pemKey) {
 
 }
 
+function delay(ms) {
+    return new Promise(resolve => setTimeout(resolve, ms));
+}
+
 function ReplaceEmptyGuid (text, newGuid) {
     return text.replace(/00000000-0000-0000-0000-000000000000/g, newGuid);
 }
 
-export { SealSecretValue, GenerateSHA, EncryptData, DecryptData, ReplaceEmptyGuid };
+export { SealSecretValue, GenerateSHA, EncryptData, DecryptData, ReplaceEmptyGuid, delay };
 
 // module.exports = 
 // {
