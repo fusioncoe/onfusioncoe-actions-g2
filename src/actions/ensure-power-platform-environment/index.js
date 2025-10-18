@@ -2,7 +2,7 @@
 
 
 import core from '@actions/core';
-import {FsnxApiClient} from '../../lib/FsnxApiClient.js';
+import {FsnxApiClient, delay} from '../../lib/FsnxApiClient.js';
 
 //const msal = require('@azure/msal-node');
 

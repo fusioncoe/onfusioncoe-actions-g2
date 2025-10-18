@@ -37234,7 +37234,7 @@ __export(CacheHelpers_exports, {
 // node_modules/@azure/msal-node/node_modules/@azure/msal-common/dist/utils/TimeUtils.mjs
 var TimeUtils_exports = {};
 __export(TimeUtils_exports, {
-  delay: () => delay2,
+  delay: () => delay,
   isCacheExpired: () => isCacheExpired,
   isTokenExpired: () => isTokenExpired,
   nowSeconds: () => nowSeconds,
@@ -37267,7 +37267,7 @@ function wasClockTurnedBack(cachedAt) {
   const cachedAtSec = Number(cachedAt);
   return cachedAtSec > nowSeconds();
 }
-function delay2(t, value) {
+function delay(t, value) {
   return new Promise((resolve) => setTimeout(() => resolve(value), t));
 }
 
@@ -46432,6 +46432,9 @@ async function DecryptData(encryptedData, pemKey) {
   import_core2.default.info(`Decrypted text: ${decryptedText}`);
   return decryptedText;
 }
+function delay2(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
 
 // src/actions/ensure-power-platform-environment/index.js
 (async () => {
@@ -46695,7 +46698,7 @@ async function executeAction(args) {
       const retryDelayMs = 1e4;
       while (tokenStatus && tokenStatus.status == "Error" && retryCount < maxRetries) {
         import_core3.default.info(`Token status is Error.  This is expected as it takes time for the new secret to propagate. Retrying create connection attempt ${retryCount + 1} of ${maxRetries} after ${retryDelayMs / 1e3} seconds.`);
-        await delay(retryDelayMs);
+        await delay2(retryDelayMs);
         const retryCreateUpdateConnectionResponse = await fsnxClient.ExecuteHttpAction(`create-update-connection-${i}`);
         if (retryCreateUpdateConnectionResponse.ok) {
           connectionOutput.connection = retryCreateUpdateConnectionResponse.body;
