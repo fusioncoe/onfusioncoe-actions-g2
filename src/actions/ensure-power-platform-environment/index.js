@@ -321,6 +321,8 @@ async function executeAction (args)
             if (createUpdateConnectionResponse.ok)
             {
                 core.info(`Created or Updated Connection for App ${appName} in Environment ${environmentName}: ${createUpdateConnectionResponse.body.name}`);
+                core.info(JSON.stringify(createUpdateConnectionResponse));
+
                 connectionOutput.connection = createUpdateConnectionResponse.body;
             }
             else{
