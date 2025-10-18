@@ -11,6 +11,7 @@ import inputs from '../.testinput/authenticate-cicd-serviceprincipal.json' asser
 // Import required utilities
 import { fileURLToPath } from 'url';
 import { dirname } from 'path';
+import { json } from 'stream/consumers';
 
 // Convert import.meta.url to a file path
 const __filename = fileURLToPath(import.meta.url);
@@ -321,19 +322,80 @@ const test = async () => {
             if (createUpdateConnectionResponse.ok)
             {
                 core.info(`Created or Updated Connection for App ${appName} in Environment ${environmentName}: ${createUpdateConnectionResponse.body.name}`);
+                core.info(JSON.stringify(createUpdateConnectionResponse));
                 connectionOutput.connection = createUpdateConnectionResponse.body;
             }
             else{
                 output.error = {
                     code: createUpdateConnectionResponse.status,
-                    message: createUpdateConnectionResponse.body.error.message
+                    message: createUpdateConnectionResponse.body.message
                 };
                 await fsnxClient.SubmitOutput (output);
-                core.error(createUpdateConnectionResponse.body.error.message);
-                throw new Error(`Failed to create or update Connection for App ${appName} in Environment ${environmentName}: ${createUpdateConnectionResponse.status} : ${createUpdateConnectionResponse.body.error.message}`);
+                core.error(createUpdateConnectionResponse.body.message);
+                throw new Error(`Failed to create or update Connection for App ${appName} in Environment ${environmentName}: ${createUpdateConnectionResponse.status} : ${createUpdateConnectionResponse.body.message}`);
             }
 
+            // get-connection-permissions
 
+            const permissionUpdate = fsnxClient.Actions[`update-connection-permissions-${i}`].payload.Content.Body;
+
+            const getConnectionPermissionsResponse = await fsnxClient.ExecuteHttpAction(`get-connection-permissions-${i}`);
+            if (getConnectionPermissionsResponse.ok)
+            {   
+
+               // console.log(JSON.stringify(getConnectionPermissionsResponse.body));
+
+                    core.info(`Retrieved Current Connection Permissions for App ${appName} in Environment ${environmentName}: ${JSON.stringify(getConnectionPermissionsResponse.body)}`);
+                    const currentPermissions = getConnectionPermissionsResponse.body;
+
+                    // Delete existing permissions that are not in the desired set
+                    currentPermissions.value.forEach((value,index,array) =>{
+                        if (value.properties.roleName !== "Owner" &&
+                            !permissionUpdate.put.filter(item => item.properties.principal.id === value.properties.principal.id).length > 0 )
+                        {
+                            core.info(`Removing Permission for Principal ${value.properties.principal.id}`);
+                            if (permissionUpdate.delete == null)
+                            {
+                                permissionUpdate.delete = [];
+                            }
+                            permissionUpdate.delete.push({
+                                id: value.id,
+                            });
+                        }
+                    });
+
+            }
+            else
+            {
+                console.log(JSON.stringify(getConnectionPermissionsResponse));
+                output.error = {
+                    code: getConnectionPermissionsResponse.status,
+                    message: getConnectionPermissionsResponse.body.message
+                };
+                await fsnxClient.SubmitOutput (output);
+                core.error(getConnectionPermissionsResponse.body.message);
+                throw new Error(`Failed to get Connection Permissions for App ${appName} in Environment ${environmentName}: ${getConnectionPermissionsResponse.status} : ${getConnectionPermissionsResponse.body.message}`);
+            }   
+
+            // Update Connection Permissions
+
+            const updateConnectionPermissionsResponse = await fsnxClient.ExecuteHttpAction(`update-connection-permissions-${i}`);
+            console.log(JSON.stringify(updateConnectionPermissionsResponse));
+            if (updateConnectionPermissionsResponse.ok)
+            {
+                core.info(`Updated Connection Permissions for App ${appName} in Environment ${environmentName}`);
+                connectionOutput.connectionPermissions = updateConnectionPermissionsResponse.body;
+            }
+            else
+            {
+                output.error = {
+                    code: updateConnectionPermissionsResponse.status,
+                    message: updateConnectionPermissionsResponse.body.message
+                };
+                await fsnxClient.SubmitOutput(output);
+                core.error(updateConnectionPermissionsResponse.body.message);
+                throw new Error(`Failed to update Connection Permissions for App ${appName} in Environment ${environmentName}: ${updateConnectionPermissionsResponse.status} : ${updateConnectionPermissionsResponse.body.message}`);
+            }
 
             i++;
         }
