@@ -42346,6 +42346,8 @@ async function executeAction(args) {
       } else {
         delete connectionBodyProperties["connectionParametersSet"];
       }
+      import_core3.default.info(`Connection Token Parameters for App ${appName} in Environment ${environmentName}`);
+      import_core3.default.info(JSON.stringify(connectionTokenParams));
       const createUpdateConnectionResponse = await fsnxClient.ExecuteHttpAction(`create-update-connection-${i}`);
       if (createUpdateConnectionResponse.ok) {
         import_core3.default.info(`Created or Updated Connection for App ${appName} in Environment ${environmentName}: ${createUpdateConnectionResponse.body.name}`);

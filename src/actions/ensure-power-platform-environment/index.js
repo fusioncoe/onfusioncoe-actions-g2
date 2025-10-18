@@ -317,6 +317,9 @@ async function executeAction (args)
 
             // Create or Update the Connection
 
+            core.info(`Connection Token Parameters for App ${appName} in Environment ${environmentName}`)
+            core.info(JSON.stringify(connectionTokenParams));
+
             const createUpdateConnectionResponse = await fsnxClient.ExecuteHttpAction(`create-update-connection-${i}`);
             if (createUpdateConnectionResponse.ok)
             {
