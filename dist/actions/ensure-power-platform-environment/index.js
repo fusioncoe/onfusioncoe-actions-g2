@@ -46651,7 +46651,7 @@ async function executeAction(args) {
       }
       if (executeConnCreateUpdate) {
         import_core3.default.info(`Creating or Updating Connection for App ${appName} in Environment ${environmentName}`);
-        const createUpdateConnectionResponse = await fsnxClient.ExecuteHttpActionV2({ actionName: `create-update-connection-${i}`, proxy: fiddlerProxy });
+        const createUpdateConnectionResponse = await fsnxClient.ExecuteHttpActionV2({ actionName: `create-update-connection-${i}` });
         if (createUpdateConnectionResponse.ok) {
           import_core3.default.info(`Created or Updated Connection for App ${appName} in Environment ${environmentName}: ${createUpdateConnectionResponse.body.name}`);
           import_core3.default.info(JSON.stringify(createUpdateConnectionResponse));
