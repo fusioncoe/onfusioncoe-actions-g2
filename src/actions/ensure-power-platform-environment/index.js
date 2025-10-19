@@ -145,6 +145,7 @@ async function executeAction (args)
         while (fsnxClient.Actions[`get-app-user-${i}`]) {
 
             const connectionOutput = {};
+            let executeConnCreateUpdate = false;
 
             output.DataverseConnections.push(connectionOutput);
 
@@ -243,6 +244,19 @@ async function executeAction (args)
                 }
             }
 
+            // Try Get Current App Dataverse Connection
+
+            const tryExistingConnectionResponse = await fsnxClient.ExecuteHttpActionV2({actionName: `try-existing-connection-${i}`});
+            if (tryExistingConnectionResponse.ok)
+            {
+                console.log(`Existing connection found`);
+                connectionOutput.connection = tryExistingConnectionResponse.body;
+            }
+            else if (tryExistingConnectionResponse.status === 404)
+            {
+                executeConnCreateUpdate = true;
+                console.log(`No existing connection found, will create a new one.`);
+            }
             // Get Current Secret Status
 
 
@@ -263,6 +277,7 @@ async function executeAction (args)
                 }
                 else
                 {
+                    executeConnCreateUpdate = true;
                     core.info(`No Current Secret found for App ${appName} in Environment ${environmentName}`);
                 }
             }
@@ -282,6 +297,9 @@ async function executeAction (args)
             const connectionTokenParams = connectionBodyProperties.connectionParametersSet.values;
 
             if (currentSecret == null || currentSecret === undefined || currentSecret.endDateTime < expirationCheckDate){
+                
+                executeConnCreateUpdate = true;
+                
                 core.info(`Creating new secret credential for App ${appName} in Environment ${environmentName}`);
 
                 const createSecretResponse = await fsnxClient.ExecuteHttpAction(`create-secret-credential-${i}`);
@@ -325,21 +343,24 @@ async function executeAction (args)
             //core.info(`Connection body for App ${appName} in Environment ${environmentName}`)
             //core.info(JSON.stringify(connectionBody));            
 
-            const createUpdateConnectionResponse = await fsnxClient.ExecuteHttpActionV2({actionName: `create-update-connection-${i}`});
-            if (createUpdateConnectionResponse.ok)
-            {
-                core.info(`Created or Updated Connection for App ${appName} in Environment ${environmentName}: ${createUpdateConnectionResponse.body.name}`);
-                core.info(JSON.stringify(createUpdateConnectionResponse));
-                connectionOutput.connection = createUpdateConnectionResponse.body;
-            }
-            else{
-                output.error = {
-                    code: createUpdateConnectionResponse.status,
-                    message: createUpdateConnectionResponse.body.message
-                };
-                await fsnxClient.SubmitOutput (output);
-                core.error(createUpdateConnectionResponse.body.message);
-                throw new Error(`Failed to create or update Connection for App ${appName} in Environment ${environmentName}: ${createUpdateConnectionResponse.status} : ${createUpdateConnectionResponse.body.message}`);
+            if (executeConnCreateUpdate){
+                core.info(`Creating or Updating Connection for App ${appName} in Environment ${environmentName}`);
+                const createUpdateConnectionResponse = await fsnxClient.ExecuteHttpActionV2({actionName: `create-update-connection-${i}`,proxy: fiddlerProxy});
+                if (createUpdateConnectionResponse.ok)
+                {
+                    core.info(`Created or Updated Connection for App ${appName} in Environment ${environmentName}: ${createUpdateConnectionResponse.body.name}`);
+                    core.info(JSON.stringify(createUpdateConnectionResponse));
+                    connectionOutput.connection = createUpdateConnectionResponse.body;
+                }
+                else{
+                    output.error = {
+                        code: createUpdateConnectionResponse.status,
+                        message: createUpdateConnectionResponse.body.message
+                    };
+                    await fsnxClient.SubmitOutput (output);
+                    core.error(createUpdateConnectionResponse.body.message);
+                    throw new Error(`Failed to create or update Connection for App ${appName} in Environment ${environmentName}: ${createUpdateConnectionResponse.status} : ${createUpdateConnectionResponse.body.message}`);
+                }
             }
 
             // get-connection-permissions
@@ -404,27 +425,30 @@ async function executeAction (args)
                 throw new Error(`Failed to update Connection Permissions for App ${appName} in Environment ${environmentName}: ${updateConnectionPermissionsResponse.status} : ${updateConnectionPermissionsResponse.body.message}`);
             }
 
-
-            // Rerunning create if token status is not ready
-            let tokenStatus = createUpdateConnectionResponse.body.properties.statuses.find(status => status.target === "token");
-            let retryCount = 0;
-            const maxRetries = 10;
-            const retryDelayMs = 10000; // 10 seconds
-
-            while (tokenStatus && tokenStatus.status == "Error" && retryCount < maxRetries)
+            if (executeConnCreateUpdate)
             {
-                core.info(`Token status is Error.  This is expected as it takes time for the new secret to propagate. Retrying create connection attempt ${retryCount + 1} of ${maxRetries} after ${retryDelayMs / 1000} seconds.`);
-                await delay(retryDelayMs);
-                const retryCreateUpdateConnectionResponse = await fsnxClient.ExecuteHttpAction(`create-update-connection-${i}`);
-                if (retryCreateUpdateConnectionResponse.ok) {
-                    connectionOutput.connection = retryCreateUpdateConnectionResponse.body;
-                    tokenStatus = retryCreateUpdateConnectionResponse.body.properties.statuses.find(status => status.target === "token");
-                } else {
-                    core.error(`Failed to retry create/update connection: ${retryCreateUpdateConnectionResponse.status} : ${retryCreateUpdateConnectionResponse.body.message}`);
-                    break;
+                // Rerunning create if token status is not ready
+                let tokenStatus = connectionOutput.connection.properties.statuses.find(status => status.target === "token");
+                let retryCount = 0;
+                const maxRetries = 10;
+                const retryDelayMs = 10000; // 10 seconds
+
+                while (tokenStatus && tokenStatus.status == "Error" && retryCount < maxRetries)
+                {
+                    core.info(`Token status is Error.  This is expected as it takes time for the new secret to propagate. Retrying create connection attempt ${retryCount + 1} of ${maxRetries} after ${retryDelayMs / 1000} seconds.`);
+                    await delay(retryDelayMs);
+                    const retryCreateUpdateConnectionResponse = await fsnxClient.ExecuteHttpAction(`create-update-connection-${i}`);
+                    if (retryCreateUpdateConnectionResponse.ok) {
+                        connectionOutput.connection = retryCreateUpdateConnectionResponse.body;
+                        tokenStatus = connectionOutput.connection.properties.statuses.find(status => status.target === "token");
+                    } else {
+                        core.error(`Failed to retry create/update connection: ${retryCreateUpdateConnectionResponse.status} : ${retryCreateUpdateConnectionResponse.body.message}`);
+                        break;
+                    }
+                    retryCount++;
                 }
-                retryCount++;
-            }
+
+        }
 
             i++;
         }
