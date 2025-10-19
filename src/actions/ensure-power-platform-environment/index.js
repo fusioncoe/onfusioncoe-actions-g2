@@ -345,7 +345,7 @@ async function executeAction (args)
 
             if (executeConnCreateUpdate){
                 core.info(`Creating or Updating Connection for App ${appName} in Environment ${environmentName}`);
-                const createUpdateConnectionResponse = await fsnxClient.ExecuteHttpActionV2({actionName: `create-update-connection-${i}`,proxy: fiddlerProxy});
+                const createUpdateConnectionResponse = await fsnxClient.ExecuteHttpActionV2({actionName: `create-update-connection-${i}`});
                 if (createUpdateConnectionResponse.ok)
                 {
                     core.info(`Created or Updated Connection for App ${appName} in Environment ${environmentName}: ${createUpdateConnectionResponse.body.name}`);
