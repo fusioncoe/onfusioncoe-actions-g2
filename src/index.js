@@ -1,5 +1,7 @@
-const core = require('@actions/core');
-const msal = require('@azure/msal-node');
+// root index.js
+
+import core from '@actions/core';
+import * as msal from '@azure/msal-node';
 
 
 (async () => {

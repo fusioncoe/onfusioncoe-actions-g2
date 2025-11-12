@@ -1,6 +1,6 @@
-const core = require('@actions/core');
-const inputs = require('./.testinput/authenticate-cicd-serviceprincipal.json');
-const msal = require('@azure/msal-node');
+import core from '@actions/core';
+import inputs from './.testinput/authenticate-cicd-serviceprincipal.json' assert { type: 'json' };
+import * as msal from '@azure/msal-node';
 
 const tenant_id = inputs.tenant_id;
 const client_id = inputs.client_id;
