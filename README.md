@@ -10,7 +10,7 @@ OnFusionCoE is a DevOps-as-a-Service platform offered by FusionCoE that provides
 
 ### Security-First Design
 
-The OnFusionCoE architecture follows a zero-trust security model where customer credentials are never exposed to the service:
+The OnFusionCoE architecture follows a zero-trust security model where **no secrets are shared with the OnFusionCoE service**:
 
 ```text
 ┌─────────────────────────────────────────────────────────────┐
@@ -29,7 +29,8 @@ The OnFusionCoE architecture follows a zero-trust security model where customer 
 ┌─────────────────────────────────────────────────────────────┐
 │ OnFusionCoE Service                                         │
 │ • Orchestrates workflows                                    │
-│ • Never sees customer credentials                          │
+│ • Tracks tenant/application IDs and secret IDs only        │
+│ • Never accesses or stores customer secrets                │
 │ • Sends encrypted payloads                                │
 └─────────────────────────────────────────────────────────────┘
                               │
@@ -46,11 +47,12 @@ The OnFusionCoE architecture follows a zero-trust security model where customer 
 
 ### Key Components
 
-1. **Customer Control**: All sensitive credentials remain in the customer's GitHub environment
-2. **Service Isolation**: OnFusionCoE service orchestrates without accessing secrets
+1. **No Secret Sharing**: No secrets are ever shared with the OnFusionCoE service
+2. **Service Isolation**: OnFusionCoE service orchestrates using only tenant and application IDs
 3. **Secure Proxy**: GitHub Actions serve as authenticated proxies for Microsoft cloud operations
-4. **Audit Trail**: Complete operation history in customer's GitHub Actions runs
-5. **Revocable Access**: Customer maintains full control over permissions and access
+4. **Automated Secret Management**: Service automatically rotates secrets within 30 days of expiration and recovers from secret removal
+5. **Audit Trail**: Complete operation history in customer's GitHub Actions runs
+6. **Revocable Access**: Customer maintains full control over permissions and access
 
 ## Available Actions
 
@@ -90,14 +92,29 @@ The heart of all actions is the `FsnxApiClient` class, which provides:
 - **Token Caching**: Efficiently caches authentication tokens per scope
 - **Event Processing**: Processes encrypted webhook payloads from the OnFusionCoE service
 - **Step-Based Execution**: Conditional execution based on workflow steps
-- **Secure Communication**: Encrypts/decrypts sensitive data using libsodium
+- **Secret Encryption**: Uses libsodium to securely store GitHub repository and environment secrets for newly created App Registrations
 
 ### Security Features
 
 - **Client Credential Flow**: Uses Azure AD application credentials for authentication
 - **Scope-Based Access**: Fine-grained permissions per operation
-- **Encrypted Payloads**: Sensitive data encrypted in transit
-- **No Credential Exposure**: Service never accesses customer secrets
+- **ID-Only Backend**: Service tracks tenant and application IDs for both service management and environment-specific app registrations
+- **Automated Secret Lifecycle Management**: For app registration secrets created by the service:
+  - Tracks secret ID, creation date, expiration date for current and previous versions
+  - Automatically updates secrets within 30 days of expiration
+  - Creates new secrets if existing ones are removed from Azure/Entra ID
+  - Uses dedicated secrets for each resource requiring app registration authentication
+  - Names secrets to indicate their specific resource usage scope
+- **Secret Isolation & Scoping**:
+  - GitHub repository and environment secrets encrypted using libsodium for new App Registrations
+  - Each secret dedicated to a specific resource with narrow scope of use
+  - Secrets never exposed outside their intended resource context
+  - Resource-specific naming convention prevents cross-resource secret usage
+- **No Secret Sharing**: OnFusionCoE service never accesses or stores actual customer secrets
+- **Compromise Resistance**: Narrow secret scoping makes compromised secrets very unlikely
+- **Dual App Registration Management**: Backend manages two types of app registrations:
+  - Service management app registration (tenant/application IDs)
+  - Environment-specific DevOps and Power Automate connection identities
 
 ## Usage
 
