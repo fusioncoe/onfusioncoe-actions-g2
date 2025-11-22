@@ -2,10 +2,17 @@ import core from '@actions/core';
 import * as msal from '@azure/msal-node';
 import fs from 'fs';
 import path from 'path';
+import { readFileSync } from 'fs';
+import { fileURLToPath } from 'url';
+import { dirname } from 'path';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
 
 import {FsnxApiClient} from '../src/lib/FsnxApiClient.js';
-import inputs from '../.testinput/authenticate-cicd-serviceprincipal.json' assert { type: 'json' };
-import eventInput from '../.testinput/ensure-security-group.json' assert { type: 'json' };
+
+const inputs = JSON.parse(readFileSync('./.testinput/authenticate-cicd-serviceprincipal.json', 'utf8'));
+const eventInput = JSON.parse(readFileSync('./.testinput/ensure-security-group.json', 'utf8'));
 
 //const executeAction = require('../src/actions/ensure-security-group/index.js').executeAction;
 
@@ -51,58 +58,60 @@ const test = async () => {
     const fsnxClient = new FsnxApiClient(args);
 
  
-     await fsnxClient.OnStep("upsert-security-group", async () => {
+
+    await fsnxClient.OnStep("upsert-security-group", async () => {
+
+         //core.info(JSON.stringify(fsnxClient.EventInput));
+
+        const upsertSecGrpAction = fsnxClient.Actions["group-patch-upsert"];
+
+        core.info(`Adding or updating security group "${upsertSecGrpAction.payload.Content.Body.displayName}"`)
+         // Process Actions    
+        const upsertResponse = await fsnxClient.ExecuteHttpAction("group-patch-upsert");
+
+        const getResponse = await fsnxClient.ExecuteHttpAction("group-get-by-uniquename-check");
+
+        const output = {...getResponse.body};
+
+        fsnxClient.SubmitOutput (output)
+
+    });       
+
+    await fsnxClient.OnStep("delete-security-group", async () => {
+
  
-          //core.info(JSON.stringify(fsnxClient.EventInput));
+        const deleteResult = await fsnxClient.ExecuteHttpAction("delete-group-by-objectid");
+
+        core.info(JSON.stringify(deleteResult));
+
+        const output = {
+            ...deleteResult.body
+        };
+
+        fsnxClient.SubmitOutput (output)
+
+    });      
+
+    await fsnxClient.OnStep("restore-security-group", async () => {
+
  
-         const upsertSecGrpAction = fsnxClient.Actions["group-patch-upsert"];
- 
-         core.info(`Adding or updating security group "${upsertSecGrpAction.payload.Content.Body.displayName}"`)
-          // Process Actions    
-         const upsertResponse = await fsnxClient.ExecuteHttpAction("group-patch-upsert");
- 
-         const getResponse = await fsnxClient.ExecuteHttpAction("group-get-by-uniquename-check");
- 
-         const output = {...getResponse.body};
- 
-         fsnxClient.SubmitOutput (output)
- 
-     });       
- 
-     await fsnxClient.OnStep("delete-security-group", async () => {
- 
-  
-         const deleteResult = await fsnxClient.ExecuteHttpAction("delete-group-by-objectid");
- 
-         core.info(JSON.stringify(deleteResult));
- 
-         const output = {
-             ...deleteResult.body
-         };
- 
-         fsnxClient.SubmitOutput (output)
- 
-     });      
- 
-     await fsnxClient.OnStep("restore-security-group", async () => {
- 
-  
-         // Returns just a count.
-         const countDeleted = await fsnxClient.ExecuteHttpAction("get-deleted-by-uniquename-count");
- 
-         core.info(`Count of deleted app registrations: ${countDeleted.body}`);
- 
-         let output = null;
- 
-         if (Number(countDeleted.body) > 0)
-         {
-             const restoreResult = await fsnxClient.ExecuteHttpAction("restore-deleted-security-group");     
-             output = {...restoreResult.body};     
-         }
- 
-         fsnxClient.SubmitOutput (output)
- 
-     });    
+        // Returns just a count.
+        const countDeleted = await fsnxClient.ExecuteHttpAction("get-deleted-by-uniquename-count");
+
+        core.info(`Count of deleted app registrations: ${countDeleted.body}`);
+
+        let output = null;
+
+        if (Number(countDeleted.body) > 0)
+        {
+            const restoreResult = await fsnxClient.ExecuteHttpAction("restore-deleted-security-group");     
+            output = {...restoreResult.body};     
+        }
+
+        fsnxClient.SubmitOutput (output)
+
+    });   
+
 
 
 };

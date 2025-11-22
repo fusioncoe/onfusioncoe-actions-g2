@@ -3,10 +3,11 @@
 import fs from 'fs';
 import core from '@actions/core';
 import path from 'path';
+import { readFileSync } from 'fs';
 
 import { FsnxApiClient } from '../src/lib/FsnxApiClient.js';
 
-import inputs from '../.testinput/authenticate-cicd-serviceprincipal.json' assert { type: 'json' };
+const inputs = JSON.parse(readFileSync('./.testinput/authenticate-cicd-serviceprincipal.json', 'utf8'));
 
 // Import required utilities
 import { fileURLToPath } from 'url';

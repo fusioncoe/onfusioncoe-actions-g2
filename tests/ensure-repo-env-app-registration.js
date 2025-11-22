@@ -15,10 +15,11 @@ import { Octokit } from '@octokit/rest';
 
 //const {FsnxApiClient} = require('../src/lib/FsnxApiClient.js');
 import { FsnxApiClient, SealSecretValue } from '../src/lib/FsnxApiClient.js';
+import { readFileSync } from 'fs';
 
 
 //const inputs = require('../.testinput/authenticate-cicd-serviceprincipal.json');
-import inputs from '../.testinput/authenticate-cicd-serviceprincipal.json' assert { type: 'json' };
+const inputs = JSON.parse(readFileSync('./.testinput/authenticate-cicd-serviceprincipal.json', 'utf8'));
 
 // Import required utilities
 import { fileURLToPath } from 'url';

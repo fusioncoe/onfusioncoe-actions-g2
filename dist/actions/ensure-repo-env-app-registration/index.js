@@ -49791,6 +49791,7 @@ var FsnxApiClient = class {
       "fusionex-output-sha": outputSha,
       "fusionex-auth-rsa-sha": rsaSha
     };
+    outputReqHeaders["fusionex-dispatch_partitionId"] = this.EventInput.client_payload.dispatch_partitionId;
     if (this.EventInput.client_payload.fusionex_accountorganizationid != null) {
       outputBodyObject["fusionex_accountorganizationid"] = this.EventInput.client_payload.fusionex_accountorganizationid;
       outputReqHeaders["fusionex-accountorganizationid"] = this.EventInput.client_payload.fusionex_accountorganizationid;

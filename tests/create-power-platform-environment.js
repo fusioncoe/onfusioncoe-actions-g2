@@ -3,10 +3,11 @@
 import fs from 'fs';
 import core from '@actions/core';
 import path from 'path';
+import { readFileSync } from 'fs';
 
 import { FsnxApiClient } from '../src/lib/FsnxApiClient.js';
 
-import inputs from '../.testinput/authenticate-cicd-serviceprincipal.json' assert { type: 'json' };
+const inputs = JSON.parse(readFileSync('./.testinput/authenticate-cicd-serviceprincipal.json', 'utf8'));
 
 // Import required utilities
 import { fileURLToPath } from 'url';
@@ -16,8 +17,6 @@ import { json } from 'stream/consumers';
 
 // Convert import.meta.url to a file path
 const __filename = fileURLToPath(import.meta.url);
-
-// Get the directory name from the file path
 const __dirname = dirname(__filename);
 
 const privateKeyPath = path.resolve(`${__dirname}\\..\\.testinput\\acctorg-private-key.pem`)

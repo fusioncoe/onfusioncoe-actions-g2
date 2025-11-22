@@ -5,12 +5,14 @@ import * as msal from '@azure/msal-node';
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import { readFileSync } from 'fs';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 import {FsnxApiClient} from '../src/lib/FsnxApiClient.js';
-import inputs from '../.testinput/authenticate-cicd-serviceprincipal.json' assert { type: 'json' };
+
+const inputs = JSON.parse(readFileSync('./.testinput/authenticate-cicd-serviceprincipal.json', 'utf8'));
 
 
 const privateKeyPath = path.resolve(`${__dirname}\\..\\.testinput\\acctorg-private-key.pem`)
